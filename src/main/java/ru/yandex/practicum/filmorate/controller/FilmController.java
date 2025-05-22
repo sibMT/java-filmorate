@@ -23,16 +23,7 @@ public class FilmController {
     private static final int MAX_DESCRIPTION_LENGTH = 200;
     private static final LocalDate CINEMA_BIRTHDAY = LocalDate.of(1895, 12, 28);
 
-
-    @GetMapping
-    public Collection<Film> getAllFilms() {
-        log.info("Запрос списка всех фильмов. Текущее количество: {}", films.size());
-        if (films.isEmpty()) {
-            log.warn("Список фильмов пуст");
-        }
-        return films.values();
-    }
-
+    @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
     public Film addFilm(@RequestBody Film film) {
         log.debug("Попытка добавить фильм: {}", film);
@@ -57,27 +48,21 @@ public class FilmController {
     @PutMapping
     public Film updateFilm(@RequestBody Film film) {
         log.debug("Попытка обновления фильма: {}", film);
-        log.debug("Входящие данные для обновления: name={}, releaseDate={}",
-                film.getName(), film.getDate());
-
-        if (film.getId() == null) {
-            log.error("ID фильма не указан");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Id должен быть указан");
-        }
-
-        Film existingFilm = films.get(film.getId());
-        if (existingFilm == null) {
-            log.error("Фильм с ID {} не найден", film.getId());
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Фильм не найден");
-        }
-
         try {
+            if (film.getId() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Id должен быть указан");
+            }
+
+            Film existingFilm = films.get(film.getId());
+            if (existingFilm == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Фильм не найден");
+            }
+
             validateFilmFieldsUpdate(film, existingFilm);
             updateValidFields(film, existingFilm);
 
-            log.info("Фильм обновлён. ID: {}, Новое название: {}", existingFilm.getId(), existingFilm.getName());
+            log.info("Фильм обновлён. ID: {}", existingFilm.getId());
             return existingFilm;
-
         } catch (ConditionsNotMetException e) {
             log.warn("Ошибка валидации при обновлении: {}", e.getMessage());
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
@@ -85,6 +70,15 @@ public class FilmController {
             log.warn("Конфликт данных при обновлении: {}", e.getMessage());
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
         }
+    }
+
+    @GetMapping
+    public Collection<Film> getAllFilms() {
+        log.info("Запрос списка всех фильмов. Текущее количество: {}", films.size());
+        if (films.isEmpty()) {
+            log.warn("Список фильмов пуст");
+        }
+        return films.values();
     }
 
     private void validateFilmFields(Film film) {

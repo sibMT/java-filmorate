@@ -59,13 +59,13 @@ public class UserController {
         try {
             if (user.getId() == null) {
                 log.error("ID пользователя не указан");
-                throw new ConditionsNotMetException("Id должен быть указан");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Id должен быть указан");
             }
 
             User existingUser = users.get(user.getId());
             if (existingUser == null) {
                 log.error("Пользователь с ID {} не найден", user.getId());
-                throw new ConditionsNotMetException("Пользователь не найден");
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не найден");
             }
 
             validateUserFields(user);

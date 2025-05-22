@@ -4,10 +4,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.controller.FilmController;
 import ru.yandex.practicum.filmorate.controller.UserController;
-import ru.yandex.practicum.filmorate.exception.ConditionsNotMetException;
-import ru.yandex.practicum.filmorate.exception.DuplicatedDataException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 
@@ -72,14 +72,17 @@ class FilmorateApplicationTests {
 
     @Test
     void rejectUserWithInvalidEmail() {
-        ConditionsNotMetException exception = assertThrows(ConditionsNotMetException.class,
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                 () -> userController.addUser(invalidUser));
-        assertTrue(exception.getMessage().contains("Email должен содержать @"));
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        assertTrue(exception.getReason().contains("Email должен содержать @"));
     }
 
     @Test
     void rejectUserWithSpacesInLogin() {
-        assertThrows(ConditionsNotMetException.class, () -> userController.addUser(invalidUser));
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> userController.addUser(invalidUser));
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
     }
 
     @Test
@@ -90,14 +93,17 @@ class FilmorateApplicationTests {
 
     @Test
     void rejectFilmWithEmptyName() {
-        ConditionsNotMetException exception = assertThrows(ConditionsNotMetException.class,
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                 () -> filmController.addFilm(invalidFilm));
-        assertTrue(exception.getMessage().contains("Name не может быть пустым"));
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        assertTrue(exception.getReason().contains("Name не может быть пустым"));
     }
 
     @Test
     void rejectFilmWithNegativeDuration() {
-        assertThrows(ConditionsNotMetException.class, () -> filmController.addFilm(invalidFilm));
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> filmController.addFilm(invalidFilm));
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
     }
 
     @Test
@@ -127,7 +133,9 @@ class FilmorateApplicationTests {
         invalidUpdate.setId(created.getId());
         invalidUpdate.setLogin("invalid login");
 
-        assertThrows(ConditionsNotMetException.class, () -> userController.updateUser(invalidUpdate));
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> userController.updateUser(invalidUpdate));
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
     }
 
     @Test
@@ -136,7 +144,9 @@ class FilmorateApplicationTests {
         nonExistentUpdate.setId(500L);
         nonExistentUpdate.setLogin("newLogin");
 
-        assertThrows(ConditionsNotMetException.class, () -> userController.updateUser(nonExistentUpdate));
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> userController.updateUser(nonExistentUpdate));
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
     }
 
     @Test
@@ -155,8 +165,8 @@ class FilmorateApplicationTests {
         assertEquals(created.getId(), updated.getId());
         assertEquals("Новое имя", updated.getName());
         assertEquals(200, updated.getDuration());
-        assertEquals(film.getDescription(), updated.getDescription());
-        assertEquals(film.getDate(), updated.getDate());
+        assertEquals("Новое описание", updated.getDescription());
+        assertEquals(LocalDate.of(2000, 10, 30), updated.getDate());
     }
 
     @Test
@@ -167,7 +177,9 @@ class FilmorateApplicationTests {
         invalidUpdate.setId(createdFilm.getId());
         invalidUpdate.setName(" ");
 
-        assertThrows(ConditionsNotMetException.class, () -> filmController.updateFilm(invalidUpdate));
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> filmController.updateFilm(invalidUpdate));
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
     }
 
     @Test
@@ -178,7 +190,9 @@ class FilmorateApplicationTests {
         partialUpdate.setId(created.getId());
         partialUpdate.setDuration(-10);
 
-        assertThrows(ConditionsNotMetException.class, () -> filmController.updateFilm(partialUpdate));
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> filmController.updateFilm(partialUpdate));
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
     }
 
     @Test
@@ -213,6 +227,8 @@ class FilmorateApplicationTests {
         updatedUser.setLogin("tonyLogin");
         updatedUser.setEmail(user1.getEmail());
 
-        assertThrows(DuplicatedDataException.class, () -> userController.updateUser(updatedUser));
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> userController.updateUser(updatedUser));
+        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
     }
 }

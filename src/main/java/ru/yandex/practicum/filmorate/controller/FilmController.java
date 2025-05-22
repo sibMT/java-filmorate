@@ -1,7 +1,9 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.exception.ConditionsNotMetException;
 import ru.yandex.practicum.filmorate.exception.DuplicatedDataException;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -13,7 +15,7 @@ import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/film")
+@RequestMapping("/films")
 public class FilmController {
 
     private final Map<Long, Film> films = new HashMap<>();
@@ -25,6 +27,9 @@ public class FilmController {
     @GetMapping
     public Collection<Film> getAllFilms() {
         log.info("Запрос списка всех фильмов. Текущее количество: {}", films.size());
+        if (films.isEmpty()) {
+            log.warn("Список фильмов пуст");
+        }
         return films.values();
     }
 
@@ -40,36 +45,45 @@ public class FilmController {
 
             log.info("Фильм добавлен успешно. ID: {}, Название: {}", film.getId(), film.getName());
             return film;
-        } catch (ConditionsNotMetException | DuplicatedDataException e) {
-            log.warn("Ошибка при добавлении фильма: {}", e.getMessage());
-            throw e;
+        } catch (ConditionsNotMetException e) {
+            log.warn("Ошибка валидации при добавлении: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        } catch (DuplicatedDataException e) {
+            log.warn("Конфликт данных при добавлении: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
         }
     }
 
     @PutMapping
     public Film updateFilm(@RequestBody Film film) {
-        log.debug("Попытка внести обновления: {}", film);
-        log.debug("Входящие данные для обновления: name={}, date={}",
+        log.debug("Попытка обновления фильма: {}", film);
+        log.debug("Входящие данные для обновления: name={}, releaseDate={}",
                 film.getName(), film.getDate());
+
+        if (film.getId() == null) {
+            log.error("ID фильма не указан");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Id должен быть указан");
+        }
+
+        Film existingFilm = films.get(film.getId());
+        if (existingFilm == null) {
+            log.error("Фильм с ID {} не найден", film.getId());
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Фильм не найден");
+        }
+
         try {
-            if (film.getId() == null) {
-                throw new ConditionsNotMetException("Id должен быть указан");
-            }
-
-            Film existingFilm = films.get(film.getId());
-            if (existingFilm == null) {
-                throw new ConditionsNotMetException("Фильм не найден");
-            }
-
             validateFilmFieldsUpdate(film, existingFilm);
             updateValidFields(film, existingFilm);
 
             log.info("Фильм обновлён. ID: {}, Новое название: {}", existingFilm.getId(), existingFilm.getName());
             return existingFilm;
 
-        } catch (ConditionsNotMetException | DuplicatedDataException e) {
-            log.warn("Ошибка при обновлении фильма: {}", e.getMessage());
-            throw e;
+        } catch (ConditionsNotMetException e) {
+            log.warn("Ошибка валидации при обновлении: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        } catch (DuplicatedDataException e) {
+            log.warn("Конфликт данных при обновлении: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
         }
     }
 

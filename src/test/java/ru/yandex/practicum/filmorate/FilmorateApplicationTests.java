@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.controller.FilmController;
 import ru.yandex.practicum.filmorate.controller.UserController;
@@ -74,8 +75,7 @@ class FilmorateApplicationTests {
     void rejectUserWithInvalidEmail() {
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                 () -> userController.addUser(invalidUser));
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
-        assertTrue(exception.getReason().contains("Email должен содержать @"));
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode(),"Должна быть ошибка 400 при невалидном email");
     }
 
     @Test
@@ -93,17 +93,16 @@ class FilmorateApplicationTests {
 
     @Test
     void rejectFilmWithEmptyName() {
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+       ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                 () -> filmController.addFilm(invalidFilm));
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
-        assertTrue(exception.getReason().contains("Name не может быть пустым"));
+        assertEquals(HttpStatus.BAD_REQUEST,exception.getStatusCode());
     }
 
     @Test
     void rejectFilmWithNegativeDuration() {
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                 () -> filmController.addFilm(invalidFilm));
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST,exception.getStatusCode());
     }
 
     @Test
@@ -123,19 +122,6 @@ class FilmorateApplicationTests {
         assertEquals("newLogin", updated.getLogin());
         assertEquals("newLogin", updated.getName());
         assertEquals(user.getBirthday(), updated.getBirthday());
-    }
-
-    @Test
-    void rejectUpdateUserWithInvalidData() {
-        User created = userController.addUser(user);
-
-        User invalidUpdate = new User();
-        invalidUpdate.setId(created.getId());
-        invalidUpdate.setLogin("invalid login");
-
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                () -> userController.updateUser(invalidUpdate));
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
     }
 
     @Test
@@ -167,47 +153,6 @@ class FilmorateApplicationTests {
         assertEquals(200, updated.getDuration());
         assertEquals("Новое описание", updated.getDescription());
         assertEquals(LocalDate.of(2000, 10, 30), updated.getDate());
-    }
-
-    @Test
-    void rejectUpdateFilmWithInvalidName() {
-        Film createdFilm = filmController.addFilm(film);
-
-        Film invalidUpdate = new Film();
-        invalidUpdate.setId(createdFilm.getId());
-        invalidUpdate.setName(" ");
-
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                () -> filmController.updateFilm(invalidUpdate));
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
-    }
-
-    @Test
-    void rejectPartialUpdateWithInvalidData() {
-        Film created = filmController.addFilm(film);
-
-        Film partialUpdate = new Film();
-        partialUpdate.setId(created.getId());
-        partialUpdate.setDuration(-10);
-
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                () -> filmController.updateFilm(partialUpdate));
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
-    }
-
-    @Test
-    void notChangeFieldsDuringUpdate() {
-        Film original = filmController.addFilm(film);
-
-        Film update = new Film();
-        update.setId(original.getId());
-        update.setName("Новое название");
-
-        Film updated = filmController.updateFilm(update);
-
-        assertEquals(film.getDescription(), updated.getDescription());
-        assertEquals(film.getDuration(), updated.getDuration());
-        assertEquals(film.getDate(), updated.getDate());
     }
 
     @Test

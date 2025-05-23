@@ -1,11 +1,11 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import ru.yandex.practicum.filmorate.exception.ConditionsNotMetException;
-import ru.yandex.practicum.filmorate.exception.DuplicatedDataException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.time.LocalDate;
@@ -16,160 +16,82 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/films")
+@Validated
 public class FilmController {
 
     private final Map<Long, Film> films = new HashMap<>();
     private long nextInt = 1;
-    private static final int MAX_DESCRIPTION_LENGTH = 200;
     private static final LocalDate CINEMA_BIRTHDAY = LocalDate.of(1895, 12, 28);
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
-    public Film addFilm(@RequestBody Film film) {
-        log.debug("Попытка добавить фильм: {}", film);
-        try {
-            validateFilmFields(film);
-            validateFilmUnique(film);
+    public Film addFilm(@Valid @RequestBody Film film) {
+        log.debug("Добавление фильма: {}", film.getName());
 
-            film.setId(genNextId());
-            films.put(film.getId(), film);
+        validateFilmRules(film);
 
-            log.info("Фильм добавлен успешно. ID: {}, Название: {}", film.getId(), film.getName());
-            return film;
-        } catch (ConditionsNotMetException e) {
-            log.warn("Ошибка валидации при добавлении: {}", e.getMessage());
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        } catch (DuplicatedDataException e) {
-            log.warn("Конфликт данных при добавлении: {}", e.getMessage());
-            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
-        }
+        film.setId(genNextId());
+        films.put(film.getId(), film);
+        log.info("Фильм добавлен успешно. ID: {}, Название: {}", film.getId(), film.getName());
+        return film;
     }
 
     @PutMapping
-    public Film updateFilm(@RequestBody Film film) {
-        log.debug("Попытка обновления фильма: {}", film);
-        try {
-            if (film.getId() == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Id должен быть указан");
-            }
-
-            Film existingFilm = films.get(film.getId());
-            if (existingFilm == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Фильм не найден");
-            }
-
-            validateFilmFieldsUpdate(film, existingFilm);
-            updateValidFields(film, existingFilm);
-
-            log.info("Фильм обновлён. ID: {}", existingFilm.getId());
-            return existingFilm;
-        } catch (ConditionsNotMetException e) {
-            log.warn("Ошибка валидации при обновлении: {}", e.getMessage());
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        } catch (DuplicatedDataException e) {
-            log.warn("Конфликт данных при обновлении: {}", e.getMessage());
-            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
+    public Film updateFilm(@Valid @RequestBody Film film) {
+        log.debug("Попытка обновления фильма ID: {}", film.getId());
+        if (film.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Id должен быть указан");
         }
+
+        Film existingFilm = films.get(film.getId());
+        if (existingFilm == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Фильм не найден");
+        }
+
+        validateFilmRules(film);
+        updateFilmFields(film, existingFilm);
+        log.info("Фильм обновлён. ID: {}", existingFilm.getId());
+        return existingFilm;
     }
 
     @GetMapping
     public Collection<Film> getAllFilms() {
         log.info("Запрос списка всех фильмов. Текущее количество: {}", films.size());
-        if (films.isEmpty()) {
-            log.warn("Список фильмов пуст");
-        }
         return films.values();
     }
 
-    private void validateFilmFields(Film film) {
-        log.debug("Начало валидации {}", film);
-        if (film.getName() == null || film.getName().trim().isBlank()) {
-            log.error("Название фильма не указано");
-            throw new ConditionsNotMetException("Name не может быть пустым");
-        }
-        if (film.getDescription() == null) {
-            log.error("Описание фильма не указано");
-            throw new ConditionsNotMetException("Описание должно быть указано");
-        }
-        if (film.getDescription().length() > MAX_DESCRIPTION_LENGTH) {
-            log.error("Описание фильма слишком длинное");
-            throw new ConditionsNotMetException("Описание не может превышать" + MAX_DESCRIPTION_LENGTH + " " +
-                    "символов");
-        }
-        if (film.getDate() == null) {
-            log.error("Дата релиза не указана");
-            throw new ConditionsNotMetException("Дата релиза должна быть указана");
-        }
+    private void validateFilmRules(Film film) {
+        log.debug("Проверка правил для фильма {}", film);
         if (film.getDate().isBefore(CINEMA_BIRTHDAY)) {
-            log.error("Некорректная дата релиза");
-            throw new ConditionsNotMetException("Дата релиза не может быть раньше " + CINEMA_BIRTHDAY);
-        }
-        if (film.getDuration() == null) {
-            log.error("Продолжительность не указана");
-            throw new ConditionsNotMetException("Продолжительность должна быть указана");
+            log.error("Дата релиза {} раньше дня рождения кино ({})", film.getDate(), CINEMA_BIRTHDAY);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Дата релиза не может быть раньше " + CINEMA_BIRTHDAY);
         }
         if (film.getDuration() <= 0) {
-            log.error("Некорректная продолжительность");
-            throw new ConditionsNotMetException("Продолжительность должна быть положительным числом");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Продолжительность должна быть положительным числом");
         }
-        log.debug("Валидация завершена {}", film);
+        if (film.getDate() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Дата релиза должна быть указана");
+        }
+
+        log.debug("Правила проверены успешно");
     }
 
-    private void validateFilmUnique(Film film) {
-        films.values().stream()
-                .filter(f -> f.getName().equalsIgnoreCase(film.getName()))
-                .findFirst()
-                .ifPresent(f -> {
-                    throw new DuplicatedDataException("Такое название фильма уже используется");
-                });
-    }
-
-    private void validateFilmFieldsUpdate(Film film, Film existingFilm) {
-        if (film.getName() != null && !film.getName().equals(existingFilm.getName())) {
-            films.values().stream()
-                    .filter(f -> !f.getId().equals(existingFilm.getId()))
-                    .filter(f -> f.getName().equalsIgnoreCase(existingFilm.getName()))
-                    .findFirst()
-                    .ifPresent(f -> {
-                        throw new DuplicatedDataException("Фильм с таким названием уже существует");
-                    });
-        }
-        if (film.getName() == null || film.getName().trim().isBlank()) {
-            throw new ConditionsNotMetException("Name не может быть пустым");
-        }
-
-        if (film.getDescription() != null) {
-            if (film.getDescription().length() > MAX_DESCRIPTION_LENGTH) {
-                throw new ConditionsNotMetException("Описание не может превышать " + MAX_DESCRIPTION_LENGTH + " символов");
-            }
-        }
-
-        if (film.getDate() != null) {
-            if (film.getDate().isBefore(CINEMA_BIRTHDAY)) {
-                throw new ConditionsNotMetException("Дата релиза не может быть раньше " + CINEMA_BIRTHDAY);
-            }
-        }
-
-        if (film.getDuration() != null) {
-            if (film.getDuration() <= 0) {
-                throw new ConditionsNotMetException("Продолжительность должна быть положительным числом");
-            }
-        }
-    }
-
-    private void updateValidFields(Film film, Film existingFilm) {
+    private void updateFilmFields(Film film, Film existingFilm) {
         if (film.getName() != null) {
             existingFilm.setName(film.getName());
-        }
-        if (film.getDate() != null) {
-            existingFilm.setDate(film.getDate());
         }
         if (film.getDescription() != null) {
             existingFilm.setDescription(film.getDescription());
         }
+        if (film.getDate() != null) {
+            existingFilm.setDate(film.getDate());
+        }
         if (film.getDuration() != null) {
             existingFilm.setDuration(film.getDuration());
         }
+
     }
 
     private long genNextId() {

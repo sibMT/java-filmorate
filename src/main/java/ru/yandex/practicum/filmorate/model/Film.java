@@ -12,9 +12,9 @@ import java.time.LocalDate;
 @Data
 public class Film {
     private Long id;
-    @NotBlank(message ="Название не может быть пустым")
+    @NotBlank(message = "Название не может быть пустым")
     private String name;
-    @Size(min=1,max=200)
+    @Size(min = 1, max = 200)
     private String description;
     @NotNull
     @JsonProperty("releaseDate")

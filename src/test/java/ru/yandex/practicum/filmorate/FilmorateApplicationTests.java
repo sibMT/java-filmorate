@@ -75,7 +75,7 @@ class FilmorateApplicationTests {
     void rejectUserWithInvalidEmail() {
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                 () -> userController.addUser(invalidUser));
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode(),"Должна быть ошибка 400 при невалидном email");
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode(), "Должна быть ошибка 400 при невалидном email");
     }
 
     @Test
@@ -93,16 +93,16 @@ class FilmorateApplicationTests {
 
     @Test
     void rejectFilmWithEmptyName() {
-       ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                 () -> filmController.addFilm(invalidFilm));
-        assertEquals(HttpStatus.BAD_REQUEST,exception.getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
     }
 
     @Test
     void rejectFilmWithNegativeDuration() {
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                 () -> filmController.addFilm(invalidFilm));
-        assertEquals(HttpStatus.BAD_REQUEST,exception.getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
     }
 
     @Test

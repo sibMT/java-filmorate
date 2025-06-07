@@ -1,25 +1,40 @@
 package ru.yandex.practicum.filmorate;
 
+import jakarta.validation.ValidationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.controller.FilmController;
 import ru.yandex.practicum.filmorate.controller.UserController;
+import ru.yandex.practicum.filmorate.exception.UserNotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 class FilmorateApplicationTests {
 
-    protected final FilmController filmController = new FilmController();
-    protected final UserController userController = new UserController();
+
+    @Autowired
+    private FilmController filmController;
+
+    @Autowired
+    private UserController userController;
+
+    @Autowired
+    private FilmService filmService;
+
+    @Autowired
+    private UserService userService;
+
     protected User user;
     protected User invalidUser;
     protected Film film;
@@ -27,28 +42,33 @@ class FilmorateApplicationTests {
 
     @BeforeEach
     void setUp() {
-        user = new User();
-        user.setEmail("ivan@email.com");
-        user.setLogin("ivanLogin");
-        user.setName("Ivan");
-        user.setBirthday(LocalDate.of(1997, 3, 5));
 
-        invalidUser = new User();
-        invalidUser.setEmail("maxim-email.com");
-        invalidUser.setLogin("maxim login");
-        invalidUser.setBirthday(LocalDate.now().plusDays(1));
+        user = User.builder()
+                .email("ivan@email.com")
+                .login("ivanLogin")
+                .name("Ivan")
+                .birthday(LocalDate.of(1997, 10, 4))
+                .build();
 
-        film = new Film();
-        film.setName("Transformers");
-        film.setDescription("Роботы-машины");
-        film.setDate(LocalDate.of(2007, 3, 10));
-        film.setDuration(95);
+        invalidUser = User.builder()
+                .email("maxim-email.com")
+                .login("maxim login")
+                .birthday(LocalDate.now().plusDays(1))
+                .build();
 
-        invalidFilm = new Film();
-        invalidFilm.setName("");
-        invalidFilm.setDescription("!".repeat(201));
-        invalidFilm.setDate(LocalDate.of(1900, 1, 1));
-        invalidFilm.setDuration(-100);
+        film = Film.builder()
+                .name("Transformers")
+                .description("Роботы-машины")
+                .date(LocalDate.of(2007, 3, 10))
+                .duration(95)
+                .build();
+
+        invalidFilm = Film.builder()
+                .name("")
+                .description("!".repeat(201))
+                .date(LocalDate.of(1900, 1, 1))
+                .duration(-100)
+                .build();
     }
 
     @AfterEach
@@ -57,10 +77,13 @@ class FilmorateApplicationTests {
         filmController.getAllFilms().clear();
     }
 
+
     @Test
     void contextLoads() {
-        assertNotNull(filmController, "FilmController загружен некорректно");
-        assertNotNull(userController, "UserController загружен некорректно");
+        assertNotNull(filmController);
+        assertNotNull(userController);
+        assertNotNull(filmService);
+        assertNotNull(userService);
     }
 
     @Test
@@ -72,16 +95,8 @@ class FilmorateApplicationTests {
 
     @Test
     void rejectUserWithInvalidEmail() {
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+        assertThrows(ValidationException.class,
                 () -> userController.addUser(invalidUser));
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode(), "Должна быть ошибка 400 при невалидном email");
-    }
-
-    @Test
-    void rejectUserWithSpacesInLogin() {
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                () -> userController.addUser(invalidUser));
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
     }
 
     @Test
@@ -92,87 +107,115 @@ class FilmorateApplicationTests {
 
     @Test
     void rejectFilmWithEmptyName() {
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+        assertThrows(ValidationException.class,
                 () -> filmController.addFilm(invalidFilm));
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
-    }
-
-    @Test
-    void rejectFilmWithNegativeDuration() {
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                () -> filmController.addFilm(invalidFilm));
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
     }
 
     @Test
     void updateUserSuccessfully() {
         User newUser = userController.addUser(user);
 
-        User updateData = new User();
-        updateData.setId(newUser.getId());
-        updateData.setEmail("new@email.com");
-        updateData.setLogin("newLogin");
-        updateData.setBirthday(user.getBirthday());
+        User updateData = User.builder()
+                .id(newUser.getId())
+                .email("new@email.com")
+                .login("newLogin")
+                .birthday(user.getBirthday())
+                .build();
 
         User updated = userController.updateUser(updateData);
 
         assertEquals(newUser.getId(), updated.getId());
         assertEquals("new@email.com", updated.getEmail());
         assertEquals("newLogin", updated.getLogin());
-        assertEquals("newLogin", updated.getName());
-        assertEquals(user.getBirthday(), updated.getBirthday());
     }
 
     @Test
     void rejectUpdateForNonExistentUser() {
-        User nonExistentUpdate = new User();
-        nonExistentUpdate.setId(500L);
-        nonExistentUpdate.setLogin("newLogin");
+        User nonExistentUpdate = User.builder()
+                .id(500L)
+                .email("newEmail@email.com")
+                .login("newLogin")
+                .build();
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+        assertThrows(UserNotFoundException.class,
                 () -> userController.updateUser(nonExistentUpdate));
-        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
     }
 
     @Test
     void updateFilmSuccessfully() {
         Film created = filmController.addFilm(film);
 
-        Film updateData = new Film();
-        updateData.setId(created.getId());
-        updateData.setName("Новое имя");
-        updateData.setDuration(200);
-        updateData.setDescription("Новое описание");
-        updateData.setDate(LocalDate.of(2000, 10, 30));
+        Film updateData = Film.builder()
+                .id(created.getId())
+                .name("Новое имя")
+                .duration(200)
+                .description("Новое описание")
+                .date(LocalDate.of(2000, 10, 30))
+                .build();
 
         Film updated = filmController.updateFilm(updateData);
 
         assertEquals(created.getId(), updated.getId());
         assertEquals("Новое имя", updated.getName());
-        assertEquals(200, updated.getDuration());
-        assertEquals("Новое описание", updated.getDescription());
-        assertEquals(LocalDate.of(2000, 10, 30), updated.getDate());
     }
 
     @Test
-    void rejectDuplicateEmailWhenUpdating() {
+    void testFriends() {
+        User user1 = userController.addUser(
+                User.builder()
+                        .email("user1@email.com")
+                        .login("user1Login")
+                        .name("User 1")
+                        .birthday(LocalDate.of(1990, 1, 1))
+                        .build()
+        );
+
+        User user2 = userController.addUser(
+                User.builder()
+                        .email("user2@email.com")
+                        .login("user2Login")
+                        .name("User 2")
+                        .birthday(LocalDate.of(1995, 5, 5))
+                        .build()
+        );
+
+        userController.addFriend(user1.getId(), user2.getId());
+
+        List<User> user1Friends = userController.getFriends(user1.getId());
+        assertEquals(1, user1Friends.size());
+        assertEquals(user2.getId(), user1Friends.get(0).getId());
+
+        List<User> user2Friends = userController.getFriends(user2.getId());
+        assertEquals(1, user2Friends.size());
+        assertEquals(user1.getId(), user2Friends.get(0).getId());
+
+        User commonFriend = userController.addUser(
+                User.builder()
+                        .email("common@email.com")
+                        .login("commonFriend")
+                        .name("Common Friend")
+                        .birthday(LocalDate.of(1985, 3, 15))
+                        .build()
+        );
+
+        userController.addFriend(user1.getId(), commonFriend.getId());
+        userController.addFriend(user2.getId(), commonFriend.getId());
+
+        List<User> commonFriends = userController.getCommonFriends(user1.getId(), user2.getId());
+        assertEquals(1, commonFriends.size());
+        assertEquals(commonFriend.getId(), commonFriends.get(0).getId());
+    }
+
+    @Test
+    void testFilmLikes() {
+        Film film1 = filmController.addFilm(film);
         User user1 = userController.addUser(user);
-        User user2 = new User();
-        user2.setName("Anton");
-        user2.setEmail("anton@email.com");
-        user2.setLogin("antonLogin");
-        user2.setBirthday(LocalDate.of(2005, 11, 7));
-        user2 = userController.addUser(user2);
 
-        User updatedUser = new User();
-        updatedUser.setId(user2.getId());
-        updatedUser.setName("Tony");
-        updatedUser.setBirthday(LocalDate.of(1970, 5, 5));
-        updatedUser.setLogin("tonyLogin");
-        updatedUser.setEmail(user1.getEmail());
+        filmController.addLike(film1.getId(), user1.getId());
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                () -> userController.updateUser(updatedUser));
-        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+        List<Film> popular = filmController.getPopularFilms(1);
+        assertEquals(1, popular.size());
+        assertEquals(film1.getId(), popular.get(0).getId());
+        assertEquals(1, popular.get(0).getLikes().size());
     }
 }

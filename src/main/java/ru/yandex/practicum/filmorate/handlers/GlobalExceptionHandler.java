@@ -66,4 +66,26 @@ public class GlobalExceptionHandler {
                 .build();
     }
 
+//    @RestControllerAdvice
+//    public class GlobalExceptionHandler {
+//
+//        @ExceptionHandler(UserNotFoundException.class)
+//        @ResponseStatus(HttpStatus.NOT_FOUND)
+//        public ErrorResponse handleUserNotFound(UserNotFoundException ex) {
+//            return new ErrorResponse(ex.getMessage());
+//        }
+//
+//        @ExceptionHandler(FilmNotFoundException.class)
+//        @ResponseStatus(HttpStatus.NOT_FOUND)
+//        public ErrorResponse handleFilmNotFound(FilmNotFoundException ex) {
+//            return new ErrorResponse(ex.getMessage());
+//        }
+//
+//        @ExceptionHandler(ValidationException.class)
+//        @ResponseStatus(HttpStatus.BAD_REQUEST)
+//        public ErrorResponse handleValidation(ValidationException ex) {
+//            return new ErrorResponse(ex.getMessage());
+//        }
+//    }
+
 }

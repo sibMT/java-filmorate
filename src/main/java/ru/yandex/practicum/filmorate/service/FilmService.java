@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -51,11 +52,13 @@ public class FilmService {
 
     public void addLike(Long filmId, Long userId) {
         Film film = filmStorage.getFilmById(filmId);
-        userStorage.getUserById(userId);
+        User user = userStorage.getUserById(userId);
 
-        if (!film.getLikes().add(userId)) {
-            throw new ValidationException("Лайк уже поставлен");
+        if (film.getLikes().contains(userId)) {
+            throw new ValidationException("Пользователь уже лайкнул");
         }
+
+        film.getLikes().add(userId);
         filmStorage.updateFilm(film);
     }
 

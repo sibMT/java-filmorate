@@ -47,15 +47,12 @@ public class UserService {
 
     public void addFriend(Long userId, Long friendId) {
         if (userId.equals(friendId)) {
-            throw new ValidationException("Нельзя добавить себя в друзья");
+            throw new ValidationException("Cannot add yourself as friend");
         }
 
         User user = userStorage.getUserById(userId);
         User friend = userStorage.getUserById(friendId);
 
-        if (!user.getFriends().add(friendId)) {
-            throw new ValidationException("Пользователь уже в друзьях");
-        }
         user.getFriends().add(friendId);
         friend.getFriends().add(userId);
 

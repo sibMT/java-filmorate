@@ -8,84 +8,79 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.FilmNotFoundException;
+import ru.yandex.practicum.filmorate.exception.UserNotFoundException;
 import ru.yandex.practicum.filmorate.model.ApiError;
 
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
+
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler
+    @ExceptionHandler(UserNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ApiError handleNotFound(NotFoundException unfe) {
-        log.error("Not found exception error: {}", unfe.getMessage());
+    public ApiError handleUserNotFound(UserNotFoundException ex) {
+        log.error("User not found: {}", ex.getMessage());
         return ApiError.builder()
-                .errorCode(HttpStatus.NOT_FOUND.value())
-                .description(unfe.getMessage())
+                .status(HttpStatus.NOT_FOUND)
+                .message("User not found")
+                .details(ex.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build();
     }
 
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ApiError handleUncaught(Exception exception) {
-        log.error("Internal server error: {}", exception.getMessage(), exception);
+    @ExceptionHandler(FilmNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ApiError handleFilmNotFound(FilmNotFoundException ex) {
+        log.error("Film not found: {}", ex.getMessage());
         return ApiError.builder()
-                .errorCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .description(exception.getMessage())
+                .status(HttpStatus.NOT_FOUND)
+                .message("Film not found")
+                .details(ex.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build();
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(ValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiError handleValidation(ValidationException va) {
-        log.error("Validation exception: {}", va.getMessage());
+    public ApiError handleValidation(ValidationException ex) {
+        log.error("Validation error: {}", ex.getMessage());
         return ApiError.builder()
-                .errorCode(HttpStatus.BAD_REQUEST.value())
-                .description(va.getMessage())
+                .status(HttpStatus.BAD_REQUEST)
+                .message("Validation failed")
+                .details(ex.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build();
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
-        String errorMessage = ex.getBindingResult().getFieldErrors().stream()
+        String errorDetails = ex.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining("; "));
 
-        log.error("Validation exception: {}", errorMessage);
+        log.error("Validation error: {}", errorDetails);
         return ApiError.builder()
-                .errorCode(HttpStatus.BAD_REQUEST.value())
-                .description(ex.getMessage())
+                .status(HttpStatus.BAD_REQUEST)
+                .message("Validation error")
+                .details(errorDetails)
                 .timestamp(LocalDateTime.now())
                 .build();
     }
 
-//    @RestControllerAdvice
-//    public class GlobalExceptionHandler {
-//
-//        @ExceptionHandler(UserNotFoundException.class)
-//        @ResponseStatus(HttpStatus.NOT_FOUND)
-//        public ErrorResponse handleUserNotFound(UserNotFoundException ex) {
-//            return new ErrorResponse(ex.getMessage());
-//        }
-//
-//        @ExceptionHandler(FilmNotFoundException.class)
-//        @ResponseStatus(HttpStatus.NOT_FOUND)
-//        public ErrorResponse handleFilmNotFound(FilmNotFoundException ex) {
-//            return new ErrorResponse(ex.getMessage());
-//        }
-//
-//        @ExceptionHandler(ValidationException.class)
-//        @ResponseStatus(HttpStatus.BAD_REQUEST)
-//        public ErrorResponse handleValidation(ValidationException ex) {
-//            return new ErrorResponse(ex.getMessage());
-//        }
-//    }
-
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ApiError handleAllExceptions(Exception ex) {
+        log.error("Internal error: {}", ex.getMessage(), ex);
+        return ApiError.builder()
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .message("Internal server error")
+                .details(ex.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
 }

@@ -14,6 +14,7 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -56,6 +57,9 @@ public class FilmService {
 
         if (film.getLikes().contains(userId)) {
             throw new ValidationException("Пользователь уже лайкнул");
+        }
+        if (film.getLikes() == null) {
+            film.setLikes(new HashSet<>());
         }
 
         film.getLikes().add(userId);

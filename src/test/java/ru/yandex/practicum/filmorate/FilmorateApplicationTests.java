@@ -218,4 +218,5 @@ class FilmorateApplicationTests {
         assertEquals(film1.getId(), popular.get(0).getId());
         assertEquals(1, popular.get(0).getLikes().size());
     }
+
 }

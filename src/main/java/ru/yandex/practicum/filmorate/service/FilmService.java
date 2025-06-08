@@ -7,7 +7,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.exception.FilmNotFoundException;
+import ru.yandex.practicum.filmorate.exception.UserNotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -71,6 +73,28 @@ public class FilmService {
                 .sorted(Comparator.comparingInt(f -> -f.getLikes().size()))
                 .limit(count)
                 .collect(Collectors.toList());
+    }
+
+    public void removeLike(Long filmId, Long userId) {
+        Film film = filmStorage.getFilmById(filmId);
+        if (film == null) {
+            throw new FilmNotFoundException("Фильм с id " + filmId + " не найден");
+        }
+
+        User user = userStorage.getUserById(userId);
+        if (user == null) {
+            throw new UserNotFoundException("Пользователь с id " + userId + " не найден");
+        }
+
+        if (film.getLikes() == null) {
+            film.setLikes(new HashSet<>());
+        }
+
+        if (!film.getLikes().remove(userId)) {
+            throw new ValidationException("Пользователь " + userId + " не ставил лайк фильму " + filmId);
+        }
+
+        filmStorage.updateFilm(film);
     }
 
     private void validateFilm(Film film) {

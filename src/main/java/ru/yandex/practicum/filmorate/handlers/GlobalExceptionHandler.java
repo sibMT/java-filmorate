@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.yandex.practicum.filmorate.exception.FilmNotFoundException;
+import ru.yandex.practicum.filmorate.exception.MethodNotSupportedException;
 import ru.yandex.practicum.filmorate.exception.UserNotFoundException;
 import ru.yandex.practicum.filmorate.model.ApiError;
 
@@ -92,6 +93,17 @@ public class GlobalExceptionHandler {
         return ApiError.builder()
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .message(message)
+                .details(ex.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    @ExceptionHandler(MethodNotSupportedException.class)
+    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
+    public ApiError handleMethodNotSupported(MethodNotSupportedException ex) {
+        return ApiError.builder()
+                .status(HttpStatus.METHOD_NOT_ALLOWED)
+                .message("Метод не поддерживается")
                 .details(ex.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build();

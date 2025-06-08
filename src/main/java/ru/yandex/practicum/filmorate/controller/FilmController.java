@@ -62,6 +62,12 @@ public class FilmController {
         }
     }
 
+    @DeleteMapping("/{filmId}/like/{userId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeLike(@PathVariable Long filmId, @PathVariable Long userId) {
+        filmService.removeLike(filmId, userId);
+    }
+
     @GetMapping("/popular")
     public List<Film> getPopularFilms(@RequestParam(defaultValue = "10") int count) {
         return filmService.getPopularFilms(count);

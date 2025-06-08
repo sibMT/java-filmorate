@@ -13,6 +13,7 @@ import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @RestController
@@ -42,7 +43,7 @@ public class FilmController {
     }
 
     @GetMapping("/{id}")
-    public Film getFilmById(@PathVariable Long id) {
+    public Optional<Film> getFilmById(@PathVariable Long id) {
         log.info("Запрос фильма по id: {}", id);
         return filmService.getFilmById(id);
     }

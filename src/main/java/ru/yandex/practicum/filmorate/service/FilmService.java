@@ -3,11 +3,8 @@ package ru.yandex.practicum.filmorate.service;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.exception.FilmNotFoundException;
-import ru.yandex.practicum.filmorate.exception.UserNotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
@@ -21,113 +18,84 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class FilmService {
+    private static final LocalDate CINEMA_BIRTHDAY = LocalDate.of(1895, 12, 28);
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
-    private static final LocalDate CINEMA_BIRTHDAY = LocalDate.of(1895, 12, 28);
 
 
     public Collection<Film> getAllFilms() {
         return filmStorage.getAllFilms();
     }
 
-    public Film addFilm(Film film) {
-        validateFilm(film);
-        return filmStorage.addFilm(film);
-    }
-
-    public Film updateFilm(Film film) {
-        Film existingFilm = filmStorage.getFilmById(film.getId());
-        validateFilm(existingFilm);
-        updateFilmFields(film, existingFilm);
-        return filmStorage.updateFilm(existingFilm);
-    }
-
-    public Film getFilmById(Long id) {
-        return filmStorage.getFilmById(id);
-    }
-
     public void deleteFilm(Long id) {
         filmStorage.deleteFilm(id);
     }
 
-    public void addLike(Long filmId, Long userId) {
-        Film film = filmStorage.getFilmById(filmId);
-        if (film == null) {
-            throw new FilmNotFoundException("Фильм не найден");
-        }
+    public Optional<Film> getFilmById(Long id) {
+        return filmStorage.getFilmById(id);
+    }
 
-        userStorage.getUserById(userId);
-
+    public Film addFilm(Film film) {
+        validateFilm(film);
         if (film.getLikes() == null) {
             film.setLikes(new HashSet<>());
         }
+        return filmStorage.addFilm(film);
+    }
+
+    public Film updateFilm(Film film) {
+        Film existingFilm = getExistingFilm(film.getId());
+        validateFilm(film);
+        updateFilmFields(film, existingFilm);
+        return filmStorage.updateFilm(existingFilm);
+    }
+
+    public void addLike(Long filmId, Long userId) {
+        Film film = getExistingFilm(filmId);
+        User user = userStorage.getUserById(userId);
+
         if (!film.getLikes().add(userId)) {
             throw new ValidationException("Пользователь уже поставил лайк этому фильму");
         }
+        filmStorage.updateFilm(film);
+    }
 
+    public void removeLike(Long filmId, Long userId) {
+        Film film = getExistingFilm(filmId);
+        User user = userStorage.getUserById(userId);
+
+        if (!film.getLikes().remove(userId)) {
+            throw new ValidationException("Пользователь не ставил лайк этому фильму");
+        }
         filmStorage.updateFilm(film);
     }
 
     public List<Film> getPopularFilms(int count) {
         return filmStorage.getAllFilms().stream()
+                .filter(f -> f.getLikes() != null)
                 .sorted(Comparator.comparingInt(f -> -f.getLikes().size()))
-                .limit(count)
+                .limit(Math.max(count, 1))
                 .collect(Collectors.toList());
     }
 
-    public void removeLike(Long filmId, Long userId) {
-        Film film = filmStorage.getFilmById(filmId);
-        if (film == null) {
-            throw new FilmNotFoundException("Фильм с id " + filmId + " не найден");
-        }
-
-        User user = userStorage.getUserById(userId);
-        if (user == null) {
-            throw new UserNotFoundException("Пользователь с id " + userId + " не найден");
-        }
-
-        if (film.getLikes() == null) {
-            film.setLikes(new HashSet<>());
-        }
-
-        if (!film.getLikes().remove(userId)) {
-            throw new ValidationException("Пользователь " + userId + " не ставил лайк фильму " + filmId);
-        }
-
-        filmStorage.updateFilm(film);
+    private Film getExistingFilm(Long id) {
+        return filmStorage.getFilmById(id)
+                .orElseThrow(() -> new FilmNotFoundException("Фильм не найден"));
     }
 
     private void validateFilm(Film film) {
-        log.debug("Проверка правил для фильма {}", film);
         if (film.getReleaseDate().isBefore(CINEMA_BIRTHDAY)) {
-            log.error("Дата релиза {} раньше дня рождения кино ({})", film.getReleaseDate(), CINEMA_BIRTHDAY);
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Дата релиза не может быть раньше " + CINEMA_BIRTHDAY);
+            throw new ValidationException("Дата релиза не может быть раньше " + CINEMA_BIRTHDAY);
         }
         if (film.getDuration() <= 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Продолжительность должна быть положительным числом");
+            throw new ValidationException("Продолжительность должна быть положительной");
         }
-        if (film.getReleaseDate() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Дата релиза должна быть указана");
-        }
-
-        log.debug("Правила проверены успешно");
     }
 
-    private void updateFilmFields(Film film, Film existingFilm) {
-        if (film.getName() != null) {
-            existingFilm.setName(film.getName());
-        }
-        if (film.getDescription() != null) {
-            existingFilm.setDescription(film.getDescription());
-        }
-        if (film.getReleaseDate() != null) {
-            existingFilm.setReleaseDate(film.getReleaseDate());
-        }
-        if (film.getDuration() != null) {
-            existingFilm.setDuration(film.getDuration());
-        }
-
+    private void updateFilmFields(Film source, Film target) {
+        Optional.ofNullable(source.getName()).ifPresent(target::setName);
+        Optional.ofNullable(source.getDescription()).ifPresent(target::setDescription);
+        Optional.ofNullable(source.getReleaseDate()).ifPresent(target::setReleaseDate);
+        Optional.ofNullable(source.getDuration()).ifPresent(target::setDuration);
     }
 }

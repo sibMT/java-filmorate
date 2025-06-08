@@ -31,4 +31,9 @@ public class User {
 
     @Builder.Default
     private Set<Long> friends = new HashSet<>();
+
+    public User() {
+        this.friends = new HashSet<>();
+    }
+
 }

@@ -46,29 +46,39 @@ public class UserService {
     }
 
     public void addFriend(Long userId, Long friendId) {
-        if (userId.equals(friendId)) {
-            throw new ValidationException("Cannot add yourself as friend");
-        }
-
         User user = userStorage.getUserById(userId);
         User friend = userStorage.getUserById(friendId);
+
+        if (user.getFriends() == null) {
+            user.setFriends(new HashSet<>());
+        }
+        if (friend.getFriends() == null) {
+            friend.setFriends(new HashSet<>());
+        }
 
         user.getFriends().add(friendId);
         friend.getFriends().add(userId);
 
         userStorage.updateUser(user);
-        userStorage.updateUser(friend);
+        userStorage.updateUser(friend);;
     }
 
     public List<User> getFriends(Long userId) {
-        return userStorage.getUserById(userId).getFriends().stream()
+        User user = userStorage.getUserById(userId);
+        if (user.getFriends() == null) {
+            return List.of();
+        }
+        return user.getFriends().stream()
                 .map(userStorage::getUserById)
                 .collect(Collectors.toList());
     }
 
     public List<User> getCommonFriends(Long userId1, Long userId2) {
-        Set<Long> friends1 = userStorage.getUserById(userId1).getFriends();
-        Set<Long> friends2 = userStorage.getUserById(userId2).getFriends();
+        User user1 = userStorage.getUserById(userId1);
+        User user2 = userStorage.getUserById(userId2);
+
+        Set<Long> friends1 = user1.getFriends() != null ? user1.getFriends() : Set.of();
+        Set<Long> friends2 = user2.getFriends() != null ? user2.getFriends() : Set.of();
 
         return friends1.stream()
                 .filter(friends2::contains)
@@ -79,6 +89,13 @@ public class UserService {
     public void removeFriend(Long userId, Long friendId) {
         User user = userStorage.getUserById(userId);
         User friend = userStorage.getUserById(friendId);
+
+        if (user.getFriends() == null) {
+            user.setFriends(new HashSet<>());
+        }
+        if (friend.getFriends() == null) {
+            friend.setFriends(new HashSet<>());
+        }
 
         user.getFriends().remove(friendId);
         friend.getFriends().remove(userId);

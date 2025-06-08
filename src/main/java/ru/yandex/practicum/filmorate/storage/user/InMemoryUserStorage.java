@@ -5,10 +5,7 @@ import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.UserNotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -25,6 +22,10 @@ public class InMemoryUserStorage implements UserStorage {
     public User addUser(User user) {
         user.setId(genNextId());
         user.setName(noName(user));
+        if (user.getFriends() == null) {
+            user.setFriends(new HashSet<>());
+        }
+
         users.put(user.getId(), user);
         return user;
     }
@@ -49,6 +50,9 @@ public class InMemoryUserStorage implements UserStorage {
             throw new UserNotFoundException(errorMessage);
         }
         user.setName(getValidName(user));
+        if (user.getFriends() == null) {
+            user.setFriends(new HashSet<>()); // Инициализация при обновлении
+        }
         users.put(user.getId(), user);
         return user;
     }

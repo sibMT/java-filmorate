@@ -76,6 +76,17 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
+    public void removeFriend(Long userId, Long friendId) {
+        User user = userStorage.getUserById(userId);
+        User friend = userStorage.getUserById(friendId);
+
+        user.getFriends().remove(friendId);
+        friend.getFriends().remove(userId);
+
+        userStorage.updateUser(user);
+        userStorage.updateUser(friend);
+    }
+
     private void validateUser(User user) {
         if (user.getBirthday() != null && user.getBirthday().isAfter(LocalDate.now())) {
             throw new ValidationException("Birthday не может быть в будущем");

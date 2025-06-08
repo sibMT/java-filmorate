@@ -59,14 +59,14 @@ class FilmorateApplicationTests {
         film = Film.builder()
                 .name("Transformers")
                 .description("Роботы-машины")
-                .date(LocalDate.of(2007, 3, 10))
+                .releaseDate(LocalDate.of(2007, 3, 10))
                 .duration(95)
                 .build();
 
         invalidFilm = Film.builder()
                 .name("")
                 .description("!".repeat(201))
-                .date(LocalDate.of(1900, 1, 1))
+                .releaseDate(LocalDate.of(1900, 1, 1))
                 .duration(-100)
                 .build();
     }
@@ -150,7 +150,7 @@ class FilmorateApplicationTests {
                 .name("Новое имя")
                 .duration(200)
                 .description("Новое описание")
-                .date(LocalDate.of(2000, 10, 30))
+                .releaseDate(LocalDate.of(2000, 10, 30))
                 .build();
 
         Film updated = filmController.updateFilm(updateData);

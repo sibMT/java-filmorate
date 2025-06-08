@@ -83,4 +83,17 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .build();
     }
+
+    @ExceptionHandler(NullPointerException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ApiError handleNullPointer(NullPointerException ex) {
+        String message = "Ошибка при обработке запроса. Неинициализированное поле likes";
+        log.error(message, ex);
+        return ApiError.builder()
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .message(message)
+                .details(ex.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
 }

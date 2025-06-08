@@ -6,16 +6,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import ru.yandex.practicum.filmorate.exception.FilmNotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -53,16 +50,19 @@ public class FilmService {
 
     public void addLike(Long filmId, Long userId) {
         Film film = filmStorage.getFilmById(filmId);
-        User user = userStorage.getUserById(userId);
-
-        if (film.getLikes().contains(userId)) {
-            throw new ValidationException("Пользователь уже лайкнул");
+        if (film == null) {
+            throw new FilmNotFoundException("Фильм не найден");
         }
+
+        userStorage.getUserById(userId);
+
         if (film.getLikes() == null) {
             film.setLikes(new HashSet<>());
         }
+        if (!film.getLikes().add(userId)) {
+            throw new ValidationException("Пользователь уже поставил лайк этому фильму");
+        }
 
-        film.getLikes().add(userId);
         filmStorage.updateFilm(film);
     }
 
@@ -75,8 +75,8 @@ public class FilmService {
 
     private void validateFilm(Film film) {
         log.debug("Проверка правил для фильма {}", film);
-        if (film.getDate().isBefore(CINEMA_BIRTHDAY)) {
-            log.error("Дата релиза {} раньше дня рождения кино ({})", film.getDate(), CINEMA_BIRTHDAY);
+        if (film.getReleaseDate().isBefore(CINEMA_BIRTHDAY)) {
+            log.error("Дата релиза {} раньше дня рождения кино ({})", film.getReleaseDate(), CINEMA_BIRTHDAY);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Дата релиза не может быть раньше " + CINEMA_BIRTHDAY);
         }
@@ -84,7 +84,7 @@ public class FilmService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Продолжительность должна быть положительным числом");
         }
-        if (film.getDate() == null) {
+        if (film.getReleaseDate() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Дата релиза должна быть указана");
         }
 
@@ -98,8 +98,8 @@ public class FilmService {
         if (film.getDescription() != null) {
             existingFilm.setDescription(film.getDescription());
         }
-        if (film.getDate() != null) {
-            existingFilm.setDate(film.getDate());
+        if (film.getReleaseDate() != null) {
+            existingFilm.setReleaseDate(film.getReleaseDate());
         }
         if (film.getDuration() != null) {
             existingFilm.setDuration(film.getDuration());

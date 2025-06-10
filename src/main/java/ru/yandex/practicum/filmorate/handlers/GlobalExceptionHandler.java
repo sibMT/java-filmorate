@@ -8,9 +8,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import ru.yandex.practicum.filmorate.exception.FilmNotFoundException;
 import ru.yandex.practicum.filmorate.exception.MethodNotSupportedException;
-import ru.yandex.practicum.filmorate.exception.UserNotFoundException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.ApiError;
 
 import java.time.LocalDateTime;
@@ -21,29 +20,18 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(UserNotFoundException.class)
+    @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ApiError handleUserNotFound(UserNotFoundException ex) {
-        log.error("User not found: {}", ex.getMessage());
+    public ApiError handleNotFound(NotFoundException ex) {
+        log.error("Not found error: {}", ex.getMessage());
         return ApiError.builder()
                 .status(HttpStatus.NOT_FOUND)
-                .message("User not found")
+                .message("Not found")
                 .details(ex.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build();
     }
 
-    @ExceptionHandler(FilmNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ApiError handleFilmNotFound(FilmNotFoundException ex) {
-        log.error("Film not found: {}", ex.getMessage());
-        return ApiError.builder()
-                .status(HttpStatus.NOT_FOUND)
-                .message("Film not found")
-                .details(ex.getMessage())
-                .timestamp(LocalDateTime.now())
-                .build();
-    }
 
     @ExceptionHandler(ValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)

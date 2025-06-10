@@ -34,12 +34,6 @@ public class UserService {
     }
 
     public User updateUser(User user) {
-//        User existingUser = userStorage.getUserById(user.getId())
-//                .orElseThrow(() -> new NotFoundException("Пользователь", user.getId()));
-//        validateUpdateUnique(user, existingUser);
-//        updateUserFields(user, existingUser);
-//        validateUser(existingUser);
-//        return userStorage.updateUser(existingUser);
         User existingUser = userStorage.getUserById(user.getId());
 
         validateUpdateUnique(user, existingUser);

@@ -8,7 +8,8 @@ public class NotFoundException extends RuntimeException {
     public NotFoundException(String message) {
         super(message);
     }
-    public NotFoundException(String message,Long id) {
+
+    public NotFoundException(String message, Long id) {
         super(String.format("%s с id=%d не найден", message, id));
     }
 }

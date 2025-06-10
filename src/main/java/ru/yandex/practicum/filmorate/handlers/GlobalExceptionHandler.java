@@ -4,6 +4,7 @@ package ru.yandex.practicum.filmorate.handlers;
 import jakarta.validation.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -21,17 +22,16 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(NotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ApiError handleNotFound(NotFoundException ex) {
-        log.error("Not found error: {}", ex.getMessage());
-        return ApiError.builder()
+    public ResponseEntity<ApiError> handleNotFound(NotFoundException ex) {
+        log.error("Not found: {}", ex.getMessage());
+        ApiError error = ApiError.builder()
                 .status(HttpStatus.NOT_FOUND)
                 .message("Not found")
                 .details(ex.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build();
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
-
 
     @ExceptionHandler(ValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)

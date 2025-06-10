@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import ru.yandex.practicum.filmorate.controller.FilmController;
 import ru.yandex.practicum.filmorate.controller.UserController;
-import ru.yandex.practicum.filmorate.exception.UserNotFoundException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.FilmService;
@@ -137,7 +137,7 @@ class FilmorateApplicationTests {
                 .login("newLogin")
                 .build();
 
-        assertThrows(UserNotFoundException.class,
+        assertThrows(NotFoundException.class,
                 () -> userController.updateUser(nonExistentUpdate));
     }
 

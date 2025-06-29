@@ -7,6 +7,7 @@ import ru.yandex.practicum.filmorate.exception.UserNotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -58,6 +59,48 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public void deleteUser(Long id) {
         users.remove(id);
+    }
+
+    @Override
+    public void addFriend(Long userId, Long friendId) {
+        User user = getUserById(userId);
+        User friend = getUserById(friendId);
+
+        user.getFriends().add(friendId);
+        friend.getFriends().add(userId); // Двусторонняя дружба
+    }
+
+    @Override
+    public void removeFriend(Long userId, Long friendId) {
+        User user = getUserById(userId);
+        User friend = getUserById(friendId);
+
+        user.getFriends().remove(friendId);
+        friend.getFriends().remove(userId); // Удаление с обеих сторон
+    }
+
+    @Override
+    public List<User> getFriends(Long userId) {
+        User user = getUserById(userId);
+        return user.getFriends().stream()
+                .map(this::getUserById)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Set<Long> getFriendIds(Long userId) {
+        return new HashSet<>(getUserById(userId).getFriends());
+    }
+
+    @Override
+    public List<User> getCommonFriends(Long userId1, Long userId2) {
+        Set<Long> friends1 = getUserById(userId1).getFriends();
+        Set<Long> friends2 = getUserById(userId2).getFriends();
+
+        return friends1.stream()
+                .filter(friends2::contains)
+                .map(this::getUserById)
+                .collect(Collectors.toList());
     }
 
 

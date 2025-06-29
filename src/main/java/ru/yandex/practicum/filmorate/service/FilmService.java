@@ -3,12 +3,17 @@ package ru.yandex.practicum.filmorate.service;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.FilmNotFoundException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.genre.GenreStorage;
+import ru.yandex.practicum.filmorate.storage.mpa.MpaStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
@@ -19,9 +24,12 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class FilmService {
-    private static final LocalDate CINEMA_BIRTHDAY = LocalDate.of(1895, 12, 28);
     private final FilmStorage filmStorage;
+    @Qualifier("filmDbStorage")
+    private static final LocalDate CINEMA_BIRTHDAY = LocalDate.of(1895, 12, 28);
     private final UserStorage userStorage;
+    private final GenreStorage genreStorage;
+    private final MpaStorage mpaStorage;
 
 
     public Collection<Film> getAllFilms() {
@@ -38,6 +46,9 @@ public class FilmService {
     }
 
     public Film addFilm(Film film) {
+        if (film.getMpa() == null) {
+            throw new ValidationException("MPA rating must be specified");
+        }
         validateFilm(film);
         if (film.getLikes() == null) {
             film.setLikes(new HashSet<>());
@@ -49,6 +60,14 @@ public class FilmService {
         Film existingFilm = getExistingFilm(film.getId());
         validateFilm(film);
         updateFilmFields(film, existingFilm);
+        if (film.getMpa() != null) {
+            existingFilm.setMpa(film.getMpa());
+        }
+
+        if (film.getGenres() != null) {
+            existingFilm.setGenres(new HashSet<>(film.getGenres()));
+        }
+
         return filmStorage.updateFilm(existingFilm);
     }
 
@@ -99,5 +118,14 @@ public class FilmService {
         Optional.ofNullable(source.getDescription()).ifPresent(target::setDescription);
         Optional.ofNullable(source.getReleaseDate()).ifPresent(target::setReleaseDate);
         Optional.ofNullable(source.getDuration()).ifPresent(target::setDuration);
+        Optional.ofNullable(source.getMpa()).ifPresent(target::setMpa);
+    }
+
+    public List<Genre> getAllGenres() {
+        return genreStorage.getAllGenres();
+    }
+
+    public List<MpaRating> getAllMpaRatings() {
+        return mpaStorage.getAllMpaRatings();
     }
 }

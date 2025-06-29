@@ -2,14 +2,12 @@ package ru.yandex.practicum.filmorate.model;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
 import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Data
 @Builder
@@ -34,6 +32,15 @@ public class Film {
 
     @Builder.Default
     private Set<Long> likes = new HashSet<>();
+
+    private MpaRating mpa;
+    private Set<Genre> genres = new HashSet<>();
+
+    public Set<Integer> getGenreIds() {
+        return genres.stream()
+                .map(Genre::getId)
+                .collect(Collectors.toSet());
+    }
 
     @JsonSetter("likes")
     public void setLikes(Set<Long> likes) {

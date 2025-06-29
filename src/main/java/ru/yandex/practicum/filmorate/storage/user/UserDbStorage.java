@@ -84,15 +84,8 @@ public class UserDbStorage implements UserStorage {
     public void addFriend(Long userId, Long friendId) {
         if (!userExists(userId)) throw new NotFoundException("User " + userId + " not found");
         if (!userExists(friendId)) throw new NotFoundException("User " + friendId + " not found");
-
-        // Проверяем, не являются ли уже друзьями
-        String checkSql = "SELECT COUNT(*) FROM friends WHERE user_id = ? AND friend_id = ?";
-        Integer exists = jdbcTemplate.queryForObject(checkSql, Integer.class, userId, friendId);
-
-        if (exists == null || exists == 0) {
-            String sql = "INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, false)";
-            jdbcTemplate.update(sql, userId, friendId);
-        }
+        String sql = "MERGE INTO friends KEY (user_id, friend_id) VALUES (?, ?, false), (?, ?, false)";
+        jdbcTemplate.update(sql, userId, friendId, friendId, userId);
     }
 
     @Override
@@ -120,8 +113,8 @@ public class UserDbStorage implements UserStorage {
         String sql = "SELECT u.* FROM users u " +
                 "JOIN friends f1 ON u.user_id = f1.friend_id " +
                 "JOIN friends f2 ON u.user_id = f2.friend_id " +
-                "WHERE f1.user_id = ? AND f2.user_id = ?";
-        return jdbcTemplate.query(sql, new UserRowMapper(), userId1, userId2);
+                "WHERE f1.user_id = ? AND f2.user_id = ? AND u.user_id != ? AND u.user_id != ?";
+        return jdbcTemplate.query(sql, new UserRowMapper(), userId1, userId2, userId1, userId2);
     }
 
     private boolean userExists(Long userId) {

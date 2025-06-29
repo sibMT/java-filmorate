@@ -29,6 +29,8 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film addFilm(Film film) {
+        validateMpa(film);
+        validateGenres(film);
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("name", film.getName());
         parameters.put("description", film.getDescription());
@@ -137,11 +139,19 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> getPopularFilms(int count) {
-        String sql = "SELECT f.*, m.name AS mpa_name, m.code AS mpa_code, COUNT(l.user_id) AS likes_count " +
-                "FROM films f LEFT JOIN likes l ON f.film_id = l.film_id " +
+        String sql = "SELECT f.*, m.name AS mpa_name, m.code AS mpa_code " +
+                "FROM films f " +
+                "LEFT JOIN likes l ON f.film_id = l.film_id " +
                 "JOIN mpa_ratings m ON f.mpa_id = m.mpa_id " +
-                "GROUP BY f.film_id ORDER BY likes_count DESC LIMIT ?";
-        return jdbcTemplate.query(sql, new FilmRowMapper(), count);
+                "GROUP BY f.film_id " +
+                "ORDER BY COUNT(l.user_id) DESC LIMIT ?";
+
+        List<Film> films = jdbcTemplate.query(sql, new FilmRowMapper(), count);
+        films.forEach(film -> {
+            film.setGenres(getFilmGenres(film.getId()));
+            film.setLikes(getFilmLikes(film.getId()));
+        });
+        return films;
     }
 
     private void addGenres(Film film) {
@@ -171,16 +181,41 @@ public class FilmDbStorage implements FilmStorage {
                 FROM genres g
                 JOIN film_genres fg ON g.genre_id = fg.genre_id
                 WHERE fg.film_id = ?
+                ORDER BY g.genre_id ASC
                 """;
 
-        return new HashSet<>(jdbcTemplate.query(sql,
+        List<Genre> genres = jdbcTemplate.query(sql,
                 (rs, rowNum) -> new Genre(rs.getInt("genre_id"), rs.getString("name")),
                 filmId
-        ));
+        );
+
+        return new LinkedHashSet<>(genres);
     }
 
     private Set<Long> getFilmLikes(Long filmId) {
         String sql = "SELECT user_id FROM likes WHERE film_id = ?";
         return new HashSet<>(jdbcTemplate.queryForList(sql, Long.class, filmId));
+    }
+
+    private void validateGenres(Film film) {
+        if (film.getGenres() != null) {
+            String sql = "SELECT COUNT(*) FROM genres WHERE genre_id = ?";
+            for (Genre genre : film.getGenres()) {
+                Integer count = jdbcTemplate.queryForObject(sql, Integer.class, genre.getId());
+                if (count == null || count == 0) {
+                    throw new NotFoundException("Genre not found: " + genre.getId());
+                }
+            }
+        }
+    }
+
+    private void validateMpa(Film film) {
+        if (film.getMpa() != null) {
+            String sql = "SELECT COUNT(*) FROM mpa_ratings WHERE mpa_id = ?";
+            Integer count = jdbcTemplate.queryForObject(sql, Integer.class, film.getMpa().getId());
+            if (count == null || count == 0) {
+                throw new NotFoundException("MPA rating not found");
+            }
+        }
     }
 }

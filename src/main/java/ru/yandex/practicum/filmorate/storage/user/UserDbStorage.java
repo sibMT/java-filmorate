@@ -47,6 +47,7 @@ public class UserDbStorage implements UserStorage {
         if (count == null || count == 0) {
             throw new NotFoundException("User with id " + user.getId() + " not found");
         }
+
         String sql = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE user_id = ?";
         jdbcTemplate.update(sql,
                 user.getEmail(),
@@ -58,16 +59,10 @@ public class UserDbStorage implements UserStorage {
     }
 
     @Override
-    public User getUserById(Long id) throws NotFoundException {
+    public User getUserById(Long id) {
         String sql = "SELECT * FROM users WHERE user_id = ?";
         try {
-            User user = jdbcTemplate.queryForObject(sql, new UserRowMapper(), id);
-            if (user != null) {
-                user.setFriends(getUserFriends(id));
-                return user;
-            } else {
-                throw new NotFoundException("Пользователь с ID " + id + " не найден.");
-            }
+            return jdbcTemplate.queryForObject(sql, new UserRowMapper(), id);
         } catch (EmptyResultDataAccessException e) {
             throw new NotFoundException("Пользователь с ID " + id + " не найден.");
         }
@@ -81,6 +76,7 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void deleteUser(Long id) {
+        jdbcTemplate.update("DELETE FROM friends WHERE user_id = ? OR friend_id = ?", id, id);
         jdbcTemplate.update("DELETE FROM users WHERE user_id = ?", id);
     }
 
@@ -88,10 +84,15 @@ public class UserDbStorage implements UserStorage {
     public void addFriend(Long userId, Long friendId) {
         if (!userExists(userId)) throw new NotFoundException("User " + userId + " not found");
         if (!userExists(friendId)) throw new NotFoundException("User " + friendId + " not found");
-        jdbcTemplate.update(
-                "INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, false)",
-                userId, friendId
-        );
+
+        // Проверяем, не являются ли уже друзьями
+        String checkSql = "SELECT COUNT(*) FROM friends WHERE user_id = ? AND friend_id = ?";
+        Integer exists = jdbcTemplate.queryForObject(checkSql, Integer.class, userId, friendId);
+
+        if (exists == null || exists == 0) {
+            String sql = "INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, false)";
+            jdbcTemplate.update(sql, userId, friendId);
+        }
     }
 
     @Override
@@ -121,11 +122,6 @@ public class UserDbStorage implements UserStorage {
                 "JOIN friends f2 ON u.user_id = f2.friend_id " +
                 "WHERE f1.user_id = ? AND f2.user_id = ?";
         return jdbcTemplate.query(sql, new UserRowMapper(), userId1, userId2);
-    }
-
-    private Set<Long> getUserFriends(Long userId) {
-        String sql = "SELECT friend_id FROM friends WHERE user_id = ?";
-        return new HashSet<>(jdbcTemplate.queryForList(sql, Long.class, userId));
     }
 
     private boolean userExists(Long userId) {

@@ -134,19 +134,23 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public void removeLike(Long filmId, Long userId) {
-        jdbcTemplate.update("DELETE FROM likes WHERE film_id = ? AND user_id = ?", filmId, userId);
+        String sql = "DELETE FROM likes WHERE film_id = ? AND user_id = ?";
+        int deleted = jdbcTemplate.update(sql, filmId, userId);
+
+        if (deleted == 0) {
+            throw new NotFoundException("Like not found");
+        }
     }
 
     @Override
     public List<Film> getPopularFilms(int count) {
         String sql = """
-                SELECT f.*, m.name AS mpa_name, m.code AS mpa_code,
-                       COUNT(l.user_id) AS like_count
+                SELECT f.*, m.name AS mpa_name, m.code AS mpa_code
                 FROM films f
-                LEFT JOIN likes l ON f.film_id = l.film_id
                 JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
+                LEFT JOIN likes l ON f.film_id = l.film_id
                 GROUP BY f.film_id
-                ORDER BY like_count DESC, f.film_id
+                ORDER BY COUNT(l.user_id) DESC, f.film_id
                 LIMIT ?
                 """;
 

@@ -82,13 +82,11 @@ public class FilmService {
     }
 
     public void removeLike(Long filmId, Long userId) {
-        Film film = getExistingFilm(filmId);
-        User user = userStorage.getUserById(userId);
+        filmStorage.getFilmById(filmId).orElseThrow(() ->
+                new NotFoundException("Film not found"));
+        userStorage.getUserById(userId);
 
-        if (!film.getLikes().remove(userId)) {
-            throw new ValidationException("Пользователь не ставил лайк этому фильму");
-        }
-        filmStorage.updateFilm(film);
+        filmStorage.removeLike(filmId, userId);
     }
 
     public List<Film> getPopularFilms(int count) {

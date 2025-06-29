@@ -1,7 +1,9 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
@@ -12,6 +14,7 @@ import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.*;
 
+@Slf4j
 @Repository
 @Qualifier("userDbStorage")
 @Primary
@@ -89,17 +92,26 @@ public class UserDbStorage implements UserStorage {
         if (!userExists(userId)) throw new NotFoundException("User " + userId + " not found");
         if (!userExists(friendId)) throw new NotFoundException("User " + friendId + " not found");
 
-        String sql = "MERGE INTO friends (user_id, friend_id, status) KEY (user_id, friend_id) VALUES (?, ?, true)";
+        String sql = "INSERT INTO friends (user_id, friend_id) VALUES (?, ?)";
 
-        jdbcTemplate.update(sql, userId, friendId);
-        jdbcTemplate.update(sql, friendId, userId);
+        try {
+            jdbcTemplate.update(sql, userId, friendId);
+            jdbcTemplate.update(sql, friendId, userId);
+        } catch (DuplicateKeyException e) {
+            log.debug("Дружба уде существует между {} и {}", userId, friendId);
+        }
     }
 
     @Override
     public void removeFriend(Long userId, Long friendId) {
         String sql = "DELETE FROM friends WHERE (user_id = ? AND friend_id = ?)";
-        jdbcTemplate.update(sql, userId, friendId);
-        jdbcTemplate.update(sql, friendId, userId);
+
+        int deleted1 = jdbcTemplate.update(sql, userId, friendId);
+        int deleted2 = jdbcTemplate.update(sql, friendId, userId);
+
+        if (deleted1 == 0 && deleted2 == 0) {
+            log.debug("No friendship to delete between {} and {}", userId, friendId);
+        }
     }
 
     @Override
@@ -108,7 +120,7 @@ public class UserDbStorage implements UserStorage {
                 SELECT u.*
                 FROM users u
                 JOIN friends f ON u.user_id = f.friend_id
-                WHERE f.user_id = ? AND f.status = true
+                WHERE f.user_id = ?
                 """;
         return jdbcTemplate.query(sql, new UserRowMapper(), userId);
     }
@@ -127,7 +139,6 @@ public class UserDbStorage implements UserStorage {
                 JOIN friends f2 ON f1.friend_id = f2.friend_id
                 JOIN users u ON f1.friend_id = u.user_id
                 WHERE f1.user_id = ? AND f2.user_id = ?
-                  AND f1.status = true AND f2.status = true
                 """;
         return jdbcTemplate.query(sql, new UserRowMapper(), userId1, userId2);
     }

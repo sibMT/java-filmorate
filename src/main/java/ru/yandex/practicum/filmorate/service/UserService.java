@@ -97,14 +97,19 @@ public class UserService {
     }
 
     public void removeFriend(Long userId, Long friendId) {
+        userStorage.getUserById(userId);
+        userStorage.getUserById(friendId);
         userStorage.removeFriend(userId, friendId);
     }
 
     public List<User> getFriends(Long userId) {
+        userStorage.getUserById(userId);
         return userStorage.getFriends(userId);
     }
 
     public List<User> getCommonFriends(Long userId1, Long userId2) {
+        userStorage.getUserById(userId1);
+        userStorage.getUserById(userId2);
         return userStorage.getCommonFriends(userId1, userId2);
     }
 }

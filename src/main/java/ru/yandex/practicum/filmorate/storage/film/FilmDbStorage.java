@@ -97,6 +97,7 @@ public class FilmDbStorage implements FilmStorage {
             if (film != null) {
                 film.setGenres(getFilmGenres(id));
                 film.setLikes(getFilmLikes(id));
+                film.setLikesCount(getFilmLikesCount(id));
             }
             return Optional.ofNullable(film);
         } catch (EmptyResultDataAccessException e) {
@@ -141,20 +142,27 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getPopularFilms(int count) {
         String sql = """
-                SELECT f.*, m.name AS mpa_name, m.code AS mpa_code
+                SELECT f.*, m.name AS mpa_name, m.code AS mpa_code,
+                       COUNT(l.user_id) AS likes_count
                 FROM films f
-                JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
                 LEFT JOIN likes l ON f.film_id = l.film_id
+                JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
                 GROUP BY f.film_id
-                ORDER BY COUNT(l.user_id) DESC, f.film_id
+                ORDER BY likes_count DESC, f.film_id
                 LIMIT ?
                 """;
 
-        List<Film> films = jdbcTemplate.query(sql, new FilmRowMapper(), count);
+        List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> {
+            Film film = new FilmRowMapper().mapRow(rs, rowNum);
+            film.setLikesCount(rs.getInt("likes_count"));
+            return film;
+        }, count);
+
         films.forEach(film -> {
             film.setGenres(getFilmGenres(film.getId()));
             film.setLikes(getFilmLikes(film.getId()));
         });
+
         return films;
     }
 
@@ -219,5 +227,11 @@ public class FilmDbStorage implements FilmStorage {
                 throw new NotFoundException("MPA rating not found");
             }
         }
+    }
+
+    private int getFilmLikesCount(Long filmId) {
+        String sql = "SELECT COUNT(*) FROM likes WHERE film_id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, filmId);
+        return count != null ? count : 0;
     }
 }

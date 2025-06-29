@@ -140,12 +140,12 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getPopularFilms(int count) {
         String sql = """
-                SELECT f.*, m.name AS mpa_name, m.code AS mpa_code 
-                FROM films f 
-                LEFT JOIN likes l ON f.film_id = l.film_id 
-                JOIN mpa_ratings m ON f.mpa_id = m.mpa_id 
-                GROUP BY f.film_id 
-                ORDER BY COUNT(l.user_id) DESC, f.film_id DESC 
+                SELECT f.*, m.name AS mpa_name, m.code AS mpa_code
+                FROM films f
+                LEFT JOIN likes l ON f.film_id = l.film_id
+                JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
+                GROUP BY f.film_id
+                ORDER BY COUNT(l.user_id) DESC, f.film_id DESC
                 LIMIT ?
                 """;
 
@@ -155,15 +155,6 @@ public class FilmDbStorage implements FilmStorage {
             film.setLikes(getFilmLikes(film.getId()));
         });
         return films;
-    }
-
-    private void addGenres(Film film) {
-        if (film.getGenres() == null || film.getGenres().isEmpty()) return;
-
-        String sql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
-        film.getGenres().forEach(genre ->
-                jdbcTemplate.update(sql, film.getId(), genre.getId())
-        );
     }
 
     private void updateGenres(Film film) {

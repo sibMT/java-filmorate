@@ -148,7 +148,7 @@ public class FilmDbStorage implements FilmStorage {
                 LEFT JOIN likes l ON f.film_id = l.film_id
                 JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
                 GROUP BY f.film_id
-                ORDER BY likes_count DESC, f.film_id
+                ORDER BY COUNT(l.user_id) DESC, f.film_id
                 LIMIT ?
                 """;
 

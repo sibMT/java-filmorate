@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -86,14 +87,10 @@ public class UserService {
     }
 
     public void addFriend(Long userId, Long friendId) {
-        userStorage.getUserById(userId);
-        userStorage.getUserById(friendId);
-
         userStorage.addFriend(userId, friendId);
 
-        if (userStorage.friendshipExists(friendId, userId)) {
+        if (userStorage.friendshipRequestExists(friendId, userId)) {
             userStorage.confirmFriendship(userId, friendId);
-            userStorage.confirmFriendship(friendId, userId);
         }
     }
 

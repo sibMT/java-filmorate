@@ -140,12 +140,13 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getPopularFilms(int count) {
         String sql = """
-                SELECT f.*, m.name AS mpa_name, m.code AS mpa_code
+                SELECT f.*, m.name AS mpa_name, m.code AS mpa_code,
+                       COUNT(l.user_id) AS like_count
                 FROM films f
                 LEFT JOIN likes l ON f.film_id = l.film_id
                 JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
                 GROUP BY f.film_id
-                ORDER BY COUNT(l.user_id) DESC, f.film_id DESC
+                ORDER BY like_count DESC, f.film_id
                 LIMIT ?
                 """;
 

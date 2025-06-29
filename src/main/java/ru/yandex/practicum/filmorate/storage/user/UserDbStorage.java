@@ -86,23 +86,26 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void addFriend(Long userId, Long friendId) {
-        if (!userExists(userId)) throw new NotFoundException("User " + userId + " not found");
-        if (!userExists(friendId)) throw new NotFoundException("User " + friendId + " not found");
-        String sql = "INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, true), (?, ?, true)";
+        String sql = "INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, true), (?, ?, true) " +
+                "ON CONFLICT (user_id, friend_id) DO NOTHING";
+
         jdbcTemplate.update(sql, userId, friendId, friendId, userId);
     }
 
     @Override
     public void removeFriend(Long userId, Long friendId) {
-        String sql = "DELETE FROM friends WHERE user_id = ? AND friend_id = ?";
-        jdbcTemplate.update(sql, userId, friendId);
+        String sql = "DELETE FROM friends WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)";
+        jdbcTemplate.update(sql, userId, friendId, friendId, userId);
     }
 
     @Override
     public List<User> getFriends(Long userId) {
-        String sql = "SELECT u.* FROM users u " +
-                "JOIN friends f ON u.user_id = f.friend_id " +
-                "WHERE f.user_id = ? AND f.status = true";
+        String sql = """
+                SELECT u.*
+                FROM users u
+                JOIN friends f ON u.user_id = f.friend_id
+                WHERE f.user_id = ? AND f.status = true
+                """;
         return jdbcTemplate.query(sql, new UserRowMapper(), userId);
     }
 
@@ -114,12 +117,15 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public List<User> getCommonFriends(Long userId1, Long userId2) {
-        String sql = "SELECT u.* FROM users u " +
-                "JOIN friends f1 ON u.user_id = f1.friend_id " +
-                "JOIN friends f2 ON u.user_id = f2.friend_id " +
-                "WHERE f1.user_id = ? AND f2.user_id = ? " +
-                "AND u.user_id NOT IN (?, ?)";
-        return jdbcTemplate.query(sql, new UserRowMapper(), userId1, userId2, userId1, userId2);
+        String sql = """
+                SELECT u.*
+                FROM friends f1
+                JOIN friends f2 ON f1.friend_id = f2.friend_id
+                JOIN users u ON f1.friend_id = u.user_id
+                WHERE f1.user_id = ? AND f2.user_id = ?
+                  AND f1.status = true AND f2.status = true
+                """;
+        return jdbcTemplate.query(sql, new UserRowMapper(), userId1, userId2);
     }
 
     private boolean userExists(Long userId) {

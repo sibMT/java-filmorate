@@ -86,14 +86,15 @@ public class UserService {
     }
 
     public void addFriend(Long userId, Long friendId) {
-        if (userId.equals(friendId)) {
-            throw new ValidationException("User cannot add themselves as a friend");
-        }
-
         userStorage.getUserById(userId);
         userStorage.getUserById(friendId);
 
         userStorage.addFriend(userId, friendId);
+
+        if (userStorage.friendshipExists(friendId, userId)) {
+            userStorage.confirmFriendship(userId, friendId);
+            userStorage.confirmFriendship(friendId, userId);
+        }
     }
 
     public void removeFriend(Long userId, Long friendId) {
@@ -103,7 +104,6 @@ public class UserService {
     }
 
     public List<User> getFriends(Long userId) {
-        userStorage.getUserById(userId);
         return userStorage.getFriends(userId);
     }
 
@@ -111,5 +111,9 @@ public class UserService {
         userStorage.getUserById(userId1);
         userStorage.getUserById(userId2);
         return userStorage.getCommonFriends(userId1, userId2);
+    }
+
+    public boolean userExists(Long userId) {
+        return userStorage.userExists(userId);
     }
 }

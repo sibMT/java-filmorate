@@ -82,9 +82,12 @@ public class FilmService {
     }
 
     public void removeLike(Long filmId, Long userId) {
-        filmStorage.getFilmById(filmId).orElseThrow(() ->
-                new NotFoundException("Film not found"));
-        userStorage.getUserById(userId);
+        if (!filmStorage.filmExists(filmId)) {
+            throw new NotFoundException("Film not found with id: " + filmId);
+        }
+        if (!userStorage.userExists(userId)) {
+            throw new NotFoundException("User not found with id: " + userId);
+        }
 
         filmStorage.removeLike(filmId, userId);
     }

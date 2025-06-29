@@ -135,11 +135,7 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public void removeLike(Long filmId, Long userId) {
         String sql = "DELETE FROM likes WHERE film_id = ? AND user_id = ?";
-        int deleted = jdbcTemplate.update(sql, filmId, userId);
-
-        if (deleted == 0) {
-            throw new NotFoundException("Like not found");
-        }
+        jdbcTemplate.update(sql, filmId, userId);
     }
 
     @Override
@@ -160,6 +156,13 @@ public class FilmDbStorage implements FilmStorage {
             film.setLikes(getFilmLikes(film.getId()));
         });
         return films;
+    }
+
+    @Override
+    public boolean filmExists(Long filmId) {
+        String sql = "SELECT COUNT(*) FROM films WHERE film_id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, filmId);
+        return count != null && count > 0;
     }
 
     private void updateGenres(Film film) {

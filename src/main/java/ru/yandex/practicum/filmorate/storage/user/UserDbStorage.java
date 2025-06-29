@@ -92,14 +92,8 @@ public class UserDbStorage implements UserStorage {
         if (!userExists(userId)) throw new NotFoundException("User " + userId + " not found");
         if (!userExists(friendId)) throw new NotFoundException("User " + friendId + " not found");
 
-        String sql = "INSERT INTO friends (user_id, friend_id) VALUES (?, ?)";
-
-        try {
-            jdbcTemplate.update(sql, userId, friendId);
-            jdbcTemplate.update(sql, friendId, userId);
-        } catch (DuplicateKeyException e) {
-            log.debug("Дружба уде существует между {} и {}", userId, friendId);
-        }
+        String sql = "INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, false)";
+        jdbcTemplate.update(sql, userId, friendId);
     }
 
     @Override
@@ -120,7 +114,7 @@ public class UserDbStorage implements UserStorage {
                 SELECT u.*
                 FROM users u
                 JOIN friends f ON u.user_id = f.friend_id
-                WHERE f.user_id = ?
+                WHERE f.user_id = ? AND f.status = true
                 """;
         return jdbcTemplate.query(sql, new UserRowMapper(), userId);
     }
@@ -143,9 +137,23 @@ public class UserDbStorage implements UserStorage {
         return jdbcTemplate.query(sql, new UserRowMapper(), userId1, userId2);
     }
 
-    private boolean userExists(Long userId) {
+    @Override
+    public boolean userExists(Long userId) {
         String sql = "SELECT COUNT(*) FROM users WHERE user_id = ?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId);
         return count != null && count > 0;
+    }
+
+    @Override
+    public boolean friendshipExists(Long userId, Long friendId) {
+        String sql = "SELECT COUNT(*) FROM friends WHERE user_id = ? AND friend_id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId, friendId);
+        return count != null && count > 0;
+    }
+
+    @Override
+    public void confirmFriendship(Long userId, Long friendId) {
+        String sql = "UPDATE friends SET status = true WHERE user_id = ? AND friend_id = ?";
+        jdbcTemplate.update(sql, userId, friendId);
     }
 }

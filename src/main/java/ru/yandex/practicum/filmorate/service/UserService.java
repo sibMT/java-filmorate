@@ -51,18 +51,11 @@ public class UserService {
         User user = userStorage.getUserById(userId);
         User friend = userStorage.getUserById(friendId);
 
-        if (user.getFriends() == null) {
-            user.setFriends(new HashSet<>());
-        }
-        if (friend.getFriends() == null) {
-            friend.setFriends(new HashSet<>());
+        if (userId.equals(friendId)) {
+            throw new ValidationException("User cannot add themselves as a friend");
         }
 
-        user.getFriends().add(friendId);
-        friend.getFriends().add(userId);
-
-        userStorage.updateUser(user);
-        userStorage.updateUser(friend);
+        userStorage.addFriend(userId, friendId);
     }
 
     public List<User> getFriends(Long userId) {

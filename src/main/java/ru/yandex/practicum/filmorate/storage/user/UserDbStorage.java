@@ -62,7 +62,11 @@ public class UserDbStorage implements UserStorage {
     public User getUserById(Long id) {
         String sql = "SELECT * FROM users WHERE user_id = ?";
         try {
-            return jdbcTemplate.queryForObject(sql, new UserRowMapper(), id);
+            User user = jdbcTemplate.queryForObject(sql, new UserRowMapper(), id);
+            if (user != null) {
+                user.setFriends(getFriendIds(id));
+            }
+            return user;
         } catch (EmptyResultDataAccessException e) {
             throw new NotFoundException("Пользователь с ID " + id + " не найден.");
         }
@@ -84,9 +88,8 @@ public class UserDbStorage implements UserStorage {
     public void addFriend(Long userId, Long friendId) {
         if (!userExists(userId)) throw new NotFoundException("User " + userId + " not found");
         if (!userExists(friendId)) throw new NotFoundException("User " + friendId + " not found");
-        jdbcTemplate.update("INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, true), (?, ?, true)",
-                userId, friendId, friendId, userId
-        );
+        String sql = "INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, true), (?, ?, true)";
+        jdbcTemplate.update(sql, userId, friendId, friendId, userId);
     }
 
     @Override
@@ -115,7 +118,6 @@ public class UserDbStorage implements UserStorage {
                 "JOIN friends f1 ON u.user_id = f1.friend_id " +
                 "JOIN friends f2 ON u.user_id = f2.friend_id " +
                 "WHERE f1.user_id = ? AND f2.user_id = ? " +
-                "AND f1.status = true AND f2.status = true " +
                 "AND u.user_id NOT IN (?, ?)";
         return jdbcTemplate.query(sql, new UserRowMapper(), userId1, userId2, userId1, userId2);
     }

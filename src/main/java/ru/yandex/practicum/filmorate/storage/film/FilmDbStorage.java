@@ -76,15 +76,15 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Optional<Film> getFilmById(Long id) {
         String sql = """
-                SELECT 
-                    f.film_id, 
-                    f.name, 
-                    f.description, 
-                    f.release_date, 
-                    f.duration, 
+                SELECT
+                    f.film_id,
+                    f.name,
+                    f.description,
+                    f.release_date,
+                    f.duration,
                     f.mpa_id,
                     m.name AS mpa_name,
-                    m.code AS mpa_code 
+                    m.code AS mpa_code
                 FROM films f
                 JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
                 WHERE f.film_id = ?
@@ -165,8 +165,8 @@ public class FilmDbStorage implements FilmStorage {
 
     private Set<Genre> getFilmGenres(Long filmId) {
         String sql = """
-                SELECT 
-                    g.genre_id, 
+                SELECT
+                    g.genre_id,
                     g.name
                 FROM genres g
                 JOIN film_genres fg ON g.genre_id = fg.genre_id

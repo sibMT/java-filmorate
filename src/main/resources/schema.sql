@@ -48,8 +48,8 @@ CREATE TABLE IF NOT EXISTS friends (
     friend_id BIGINT NOT NULL,
     status BOOLEAN DEFAULT TRUE,
     PRIMARY KEY (user_id, friend_id),
-    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-    CONSTRAINT fk_friend FOREIGN KEY (friend_id) REFERENCES users(user_id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (friend_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS likes (

@@ -1,4 +1,3 @@
--- Удаление таблиц в правильном порядке (сначала таблицы с внешними ключами)
 DROP TABLE IF EXISTS likes;
 DROP TABLE IF EXISTS friends;
 DROP TABLE IF EXISTS film_genres;
@@ -7,7 +6,6 @@ DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS genres;
 DROP TABLE IF EXISTS mpa_ratings;
 
--- Создание таблиц
 CREATE TABLE IF NOT EXISTS mpa_ratings (
     mpa_id INTEGER PRIMARY KEY,
     name VARCHAR(50) NOT NULL,

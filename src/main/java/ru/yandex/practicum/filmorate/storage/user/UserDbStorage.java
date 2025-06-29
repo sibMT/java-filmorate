@@ -144,7 +144,6 @@ public class UserDbStorage implements UserStorage {
                 JOIN friends f2 ON f1.friend_id = f2.friend_id
                 JOIN users u ON f1.friend_id = u.user_id
                 WHERE f1.user_id = ? AND f2.user_id = ?
-                AND f1.status = true AND f2.status = true
                 """;
         return jdbcTemplate.query(sql, new UserRowMapper(), userId1, userId2);
     }

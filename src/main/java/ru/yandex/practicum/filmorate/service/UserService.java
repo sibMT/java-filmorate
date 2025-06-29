@@ -63,7 +63,6 @@ public class UserService {
 
         userStorage.updateUser(user);
         userStorage.updateUser(friend);
-        ;
     }
 
     public List<User> getFriends(Long userId) {

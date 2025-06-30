@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.jdbc.Sql;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
@@ -18,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
 @AutoConfigureTestDatabase
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @Sql(scripts = {"/schema.sql", "/test-data.sql"})
 @Sql(scripts = "/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 class UserDbStorageTest {
@@ -25,10 +27,18 @@ class UserDbStorageTest {
     @Autowired
     private UserDbStorage userStorage;
 
-    @Test
-    void getAllUsers_shouldReturn2InitialUsers() {
-        Collection<User> users = userStorage.getAllUsers();
+    private User createTestUser(String email, String login, String name) {
+        return User.builder()
+                .email(email)
+                .login(login)
+                .name(name)
+                .birthday(LocalDate.of(1990, 1, 1))
+                .build();
+    }
 
+    @Test
+    void getAllUsers() {
+        Collection<User> users = userStorage.getAllUsers();
         assertThat(users)
                 .hasSize(2)
                 .extracting(User::getEmail)
@@ -39,14 +49,8 @@ class UserDbStorageTest {
     }
 
     @Test
-    void addUser_shouldAddUserWithGeneratedId() {
-        User newUser = User.builder()
-                .email("new@example.com")
-                .login("newlogin")
-                .name("New User")
-                .birthday(LocalDate.of(2000, 1, 1))
-                .build();
-
+    void addUser() {
+        User newUser = createTestUser("new@example.com", "newlogin", "New User");
         User addedUser = userStorage.addUser(newUser);
 
         assertThat(addedUser.getId()).isNotNull();
@@ -55,7 +59,7 @@ class UserDbStorageTest {
     }
 
     @Test
-    void updateUser_shouldUpdateExistingUser() {
+    void updateUser() {
         User userToUpdate = userStorage.getUserById(1L);
         userToUpdate.setName("Updated Name");
         userToUpdate.setEmail("updated@example.com");
@@ -68,56 +72,74 @@ class UserDbStorageTest {
     }
 
     @Test
-    void getUserById_shouldReturnCorrectUser() {
+    void getUserById() {
         User user = userStorage.getUserById(2L);
-
         assertThat(user.getLogin()).isEqualTo("login2");
         assertThat(user.getName()).isEqualTo("User Two");
     }
 
     @Test
-    void deleteUser_shouldRemoveUserFromDatabase() {
+    void deleteUser() {
+        assertThat(userStorage.getAllUsers())
+                .extracting(User::getId)
+                .containsExactly(1L, 2L);
+
         userStorage.deleteUser(1L);
 
-        assertThat(userStorage.getAllUsers()).hasSize(1);
+        assertThat(userStorage.getAllUsers())
+                .hasSize(1)
+                .extracting(User::getId)
+                .containsExactly(2L);
+
         assertThrows(NotFoundException.class, () -> userStorage.getUserById(1L));
     }
 
     @Test
-    void addFriend_shouldCreateFriendship() {
+    void addFriend() {
+        assertThat(userStorage.getFriendIds(1L)).isEmpty();
         userStorage.addFriend(1L, 2L);
-
-        List<User> friends = userStorage.getFriends(1L);
-        assertThat(friends).isEmpty(); // Дружба не подтверждена
-
         Set<Long> friendIds = userStorage.getFriendIds(1L);
+
         assertThat(friendIds).containsExactly(2L);
-    }
-
-    @Test
-    void confirmFriendship_shouldUpdateStatus() {
-        userStorage.addFriend(1L, 2L);
-        userStorage.addFriend(2L, 1L);
-        userStorage.confirmFriendship(1L, 2L);
-
-        List<User> friends = userStorage.getFriends(1L);
-        assertThat(friends)
-                .hasSize(1)
-                .extracting(User::getId)
-                .containsExactly(2L);
-    }
-
-    @Test
-    void removeFriend_shouldDeleteFriendship() {
-        userStorage.addFriend(1L, 2L);
-        userStorage.confirmFriendship(1L, 2L);
-        userStorage.removeFriend(1L, 2L);
-
+        assertThat(userStorage.getFriendIds(2L)).isEmpty();
         assertThat(userStorage.getFriends(1L)).isEmpty();
     }
 
     @Test
-    void getFriends_shouldReturnConfirmedFriends() {
+    void confirmFriendship() {
+        userStorage.addFriend(1L, 2L);
+        userStorage.addFriend(2L, 1L);
+        userStorage.confirmFriendship(1L, 2L);
+
+        assertThat(userStorage.getFriends(1L))
+                .extracting(User::getId)
+                .containsExactly(2L);
+
+        assertThat(userStorage.getFriends(2L))
+                .extracting(User::getId)
+                .containsExactly(1L);
+    }
+
+    @Test
+    void removeFriend() {
+        userStorage.addFriend(1L, 2L);
+        userStorage.addFriend(2L, 1L);
+        userStorage.confirmFriendship(1L, 2L);
+
+        assertThat(userStorage.getFriends(1L)).hasSize(1);
+        assertThat(userStorage.getFriends(2L)).hasSize(1);
+
+        userStorage.removeFriend(1L, 2L);
+
+        assertThat(userStorage.getFriends(1L)).isEmpty();
+        assertThat(userStorage.getFriends(2L)).isEmpty();
+
+        assertThat(userStorage.getFriendIds(1L)).isEmpty();
+        assertThat(userStorage.getFriendIds(2L)).isEmpty();
+    }
+
+    @Test
+    void getFriends() {
         userStorage.addFriend(1L, 2L);
         userStorage.addFriend(2L, 1L);
         userStorage.confirmFriendship(1L, 2L);
@@ -130,22 +152,18 @@ class UserDbStorageTest {
     }
 
     @Test
-    void getCommonFriends_shouldReturnMutualFriends() {
-        User user3 = userStorage.addUser(
-                User.builder()
-                        .email("user3@example.com")
-                        .login("user3")
-                        .birthday(LocalDate.of(2000, 1, 1))
-                        .build()
-        );
+    void getCommonFriends_shouldWorkWithOneWayFriendship() {
+        User user3 = createTestUser("user3@mail.com", "user3", "User Three");
+        userStorage.addUser(user3);
 
         userStorage.addFriend(1L, user3.getId());
         userStorage.addFriend(2L, user3.getId());
+        userStorage.addFriend(user3.getId(), 1L);
+        userStorage.addFriend(user3.getId(), 2L);
         userStorage.confirmFriendship(1L, user3.getId());
         userStorage.confirmFriendship(2L, user3.getId());
 
         List<User> commonFriends = userStorage.getCommonFriends(1L, 2L);
-
         assertThat(commonFriends)
                 .hasSize(1)
                 .extracting(User::getId)
@@ -153,19 +171,14 @@ class UserDbStorageTest {
     }
 
     @Test
-    void getUserById_shouldThrowWhenUserNotFound() {
+    void getUserById_shouldThrowWhenNotFound() {
         assertThrows(NotFoundException.class, () -> userStorage.getUserById(999L));
     }
 
     @Test
-    void updateUser_shouldThrowWhenUserNotFound() {
-        User unknownUser = User.builder()
-                .id(999L)
-                .email("unknown@example.com")
-                .login("unknown")
-                .birthday(LocalDate.now())
-                .build();
-
+    void updateUser_shouldThrowWhenNotFound() {
+        User unknownUser = createTestUser("unknown@example.com", "unknown", "Unknown");
+        unknownUser.setId(999L);
         assertThrows(NotFoundException.class, () -> userStorage.updateUser(unknownUser));
     }
 }

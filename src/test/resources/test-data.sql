@@ -1,4 +1,3 @@
--- Очистка таблиц (правильный порядок с учетом внешних ключей)
 DELETE FROM likes;
 DELETE FROM friends;
 DELETE FROM film_genres;
@@ -32,6 +31,3 @@ INSERT INTO users (email, login, name, birthday) VALUES
 INSERT INTO films (name, description, release_date, duration, mpa_id) VALUES
 ('Film 1', 'Description 1', '2000-01-01', 120, 1),
 ('Film 2', 'Description 2', '2005-05-05', 90, 2);
-
-INSERT INTO friends (user_id, friend_id, status) VALUES
-(1, 2, false);

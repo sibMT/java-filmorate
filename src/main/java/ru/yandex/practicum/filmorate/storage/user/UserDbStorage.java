@@ -3,12 +3,10 @@ package ru.yandex.practicum.filmorate.storage.user;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.mappers.UserRowMapper;
 import ru.yandex.practicum.filmorate.model.User;
@@ -93,40 +91,23 @@ public class UserDbStorage implements UserStorage {
         if (userNotExists(userId)) throw new NotFoundException("User " + userId + " not found");
         if (userNotExists(friendId)) throw new NotFoundException("User " + friendId + " not found");
 
-        String sql = "INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, false)";
-        try {
+        if (!friendshipExists(userId, friendId)) {
+            String sql = "INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, false)";
             jdbcTemplate.update(sql, userId, friendId);
-            log.info("Добавлен запрос на дружбу: {} -> {}", userId, friendId);
-        } catch (DuplicateKeyException e) {
-            log.debug("Запрос на дружбу уже существует: {} -> {}", userId, friendId);
-        }
-    }
-
-    private void addFriendship(Long user1, Long user2) {
-        String sql = "INSERT INTO friends (user_id, friend_id) VALUES (?, ?)";
-        try {
-            jdbcTemplate.update(sql, user1, user2);
-            log.info("Добавлена дружба: {} -> {}", user1, user2);
-        } catch (DuplicateKeyException e) {
-            log.debug("Дружба уже существует: {} -> {}", user1, user2);
         }
     }
 
     @Override
-    @Transactional
     public void removeFriend(Long userId, Long friendId) {
-        removeFriendship(userId, friendId);
-        removeFriendship(friendId, userId);
+        String sql = "DELETE FROM friends WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)";
+        jdbcTemplate.update(sql, userId, friendId, friendId, userId);
     }
 
     @Override
     public List<User> getFriends(Long userId) {
-        String sql = """
-                SELECT u.*
-                FROM users u
-                JOIN friends f ON u.user_id = f.friend_id
-                WHERE f.user_id = ? AND f.status = true
-                """;
+        String sql = "SELECT u.* FROM users u "
+                + "JOIN friends f ON u.user_id = f.friend_id "
+                + "WHERE f.user_id = ? AND f.status = true";
         return jdbcTemplate.query(sql, new UserRowMapper(), userId);
     }
 
@@ -167,11 +148,13 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void confirmFriendship(Long userId, Long friendId) {
-        String sql = "UPDATE friends SET status = true " +
-                "WHERE (user_id = ? AND friend_id = ?) " +
-                "OR (user_id = ? AND friend_id = ?)";
-
-        jdbcTemplate.update(sql, userId, friendId, friendId, userId);
+        String sql = "UPDATE friends SET status = true "
+                + "WHERE (user_id = ? AND friend_id = ?) "
+                + "OR (user_id = ? AND friend_id = ?)";
+        jdbcTemplate.update(sql,
+                userId, friendId,
+                friendId, userId
+        );
     }
 
     private boolean userNotExists(Long userId) {

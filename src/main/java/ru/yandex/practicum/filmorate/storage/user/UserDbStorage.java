@@ -100,15 +100,10 @@ public class UserDbStorage implements UserStorage {
         );
 
         if (friendshipExists(friendId, userId)) {
-            jdbcTemplate.update(
-                    "UPDATE friends SET status = true WHERE user_id = ? AND friend_id = ?",
-                    userId, friendId
-            );
-
-            jdbcTemplate.update(
-                    "UPDATE friends SET status = true WHERE user_id = ? AND friend_id = ?",
-                    friendId, userId
-            );
+            jdbcTemplate.update("UPDATE friends SET status = true WHERE user_id = ? AND friend_id = ?",
+                    userId, friendId);
+            jdbcTemplate.update("UPDATE friends SET status = true WHERE user_id = ? AND friend_id = ?",
+                    friendId, userId);
         }
     }
 

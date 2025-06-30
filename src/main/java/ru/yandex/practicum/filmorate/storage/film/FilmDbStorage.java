@@ -156,7 +156,7 @@ public class FilmDbStorage implements FilmStorage {
                 JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
                 LEFT JOIN likes l ON f.film_id = l.film_id
                 GROUP BY f.film_id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name, m.code
-                ORDER BY likes_count DESC
+                ORDER BY COUNT(l.user_id) DESC
                 LIMIT ?
                 """;
 
@@ -175,12 +175,11 @@ public class FilmDbStorage implements FilmStorage {
             film.setMpa(mpa);
 
             film.setLikesCount(rs.getInt("likes_count"));
+
             return film;
         }, count);
 
-        films.forEach(film -> {
-            film.setGenres(getFilmGenres(film.getId()));
-        });
+        films.forEach(film -> film.setGenres(getFilmGenres(film.getId())));
 
         return films;
     }

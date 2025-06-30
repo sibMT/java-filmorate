@@ -47,6 +47,7 @@ public class Film {
         this.likes = likes != null ? likes : new HashSet<>();
     }
 
+    @Setter
     private int likesCount;
 
 }

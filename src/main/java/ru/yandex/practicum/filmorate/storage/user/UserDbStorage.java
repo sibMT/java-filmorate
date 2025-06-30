@@ -86,14 +86,22 @@ public class UserDbStorage implements UserStorage {
         jdbcTemplate.update("DELETE FROM users WHERE user_id = ?", id);
     }
 
-    @Override
     public void addFriend(Long userId, Long friendId) {
-        if (userNotExists(userId)) throw new NotFoundException("User " + userId + " not found");
-        if (userNotExists(friendId)) throw new NotFoundException("User " + friendId + " not found");
+        userExists(userId);
+        userExists(friendId);
 
-        if (!friendshipExists(userId, friendId)) {
-            String sql = "INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, false)";
-            jdbcTemplate.update(sql, userId, friendId);
+        if (friendshipExists(userId, friendId)) {
+            return;
+        }
+
+        jdbcTemplate.update(
+                "INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, false)",
+                userId, friendId
+        );
+
+        if (friendshipExists(friendId, userId)) {
+            jdbcTemplate.update("UPDATE friends SET status = true WHERE (user_id = ? AND friend_id = ?)" +
+                            " OR (user_id = ? AND friend_id = ?)", userId, friendId, friendId, userId);
         }
     }
 
@@ -105,9 +113,12 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public List<User> getFriends(Long userId) {
-        String sql = "SELECT u.* FROM users u "
-                + "JOIN friends f ON u.user_id = f.friend_id "
-                + "WHERE f.user_id = ? AND f.status = true";
+        String sql = """
+                SELECT u.* FROM users u
+                JOIN friends f ON u.user_id = f.friend_id
+                WHERE f.user_id = ? AND f.status = true
+                ORDER BY u.user_id""";
+
         return jdbcTemplate.query(sql, new UserRowMapper(), userId);
     }
 
@@ -146,12 +157,12 @@ public class UserDbStorage implements UserStorage {
         return count != null && count > 0;
     }
 
-    @Override
     public void confirmFriendship(Long userId, Long friendId) {
-        String sql = "UPDATE friends SET status = true "
-                + "WHERE (user_id = ? AND friend_id = ?) "
-                + "OR (user_id = ? AND friend_id = ?)";
-        jdbcTemplate.update(sql, userId, friendId, friendId, userId);
+        jdbcTemplate.update(
+                "UPDATE friends SET status = true " +
+                        "WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)",
+                userId, friendId, friendId, userId
+        );
     }
 
     private boolean userNotExists(Long userId) {

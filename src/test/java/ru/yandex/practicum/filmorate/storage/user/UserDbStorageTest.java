@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.jdbc.Sql;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
@@ -12,7 +13,6 @@ import ru.yandex.practicum.filmorate.model.User;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -26,6 +26,9 @@ class UserDbStorageTest {
 
     @Autowired
     private UserDbStorage userStorage;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private User createTestUser(String email, String login, String name) {
         return User.builder()
@@ -97,15 +100,29 @@ class UserDbStorageTest {
     @Test
     void addFriend() {
         assertThat(userStorage.getFriendIds(1L)).isEmpty();
-        userStorage.addFriend(1L, 2L);
-        Set<Long> friendIds = userStorage.getFriendIds(1L);
 
-        assertThat(friendIds).containsExactly(2L);
-        assertThat(userStorage.getFriendIds(2L)).isEmpty();
+        userStorage.addFriend(1L, 2L);
+
+        assertThat(userStorage.getFriendIds(1L)).containsExactly(2L);
+        assertThat(userStorage.getFriends(1L)).isEmpty();
+
+        userStorage.addFriend(2L, 1L);
+
         assertThat(userStorage.getFriends(1L))
                 .extracting(User::getId)
                 .containsExactly(2L);
+
+        assertThat(userStorage.getFriends(2L))
+                .extracting(User::getId)
+                .containsExactly(1L);
+
+        Boolean friendshipStatus = jdbcTemplate.queryForObject(
+                "SELECT status FROM friends WHERE user_id = 1 AND friend_id = 2",
+                Boolean.class
+        );
+        assertThat(friendshipStatus).isTrue();
     }
+
 
     @Test
     void confirmFriendship() {

@@ -1,3 +1,4 @@
+-- Очистка таблиц (правильный порядок с учетом внешних ключей)
 DELETE FROM likes;
 DELETE FROM friends;
 DELETE FROM film_genres;
@@ -5,6 +6,9 @@ DELETE FROM films;
 DELETE FROM users;
 DELETE FROM genres;
 DELETE FROM mpa_ratings;
+
+ALTER TABLE users ALTER COLUMN user_id RESTART WITH 1;
+ALTER TABLE films ALTER COLUMN film_id RESTART WITH 1;
 
 MERGE INTO mpa_ratings (mpa_id, name, code) KEY (mpa_id) VALUES
 (1, 'G', 'G'),
@@ -28,3 +32,6 @@ INSERT INTO users (email, login, name, birthday) VALUES
 INSERT INTO films (name, description, release_date, duration, mpa_id) VALUES
 ('Film 1', 'Description 1', '2000-01-01', 120, 1),
 ('Film 2', 'Description 2', '2005-05-05', 90, 2);
+
+INSERT INTO friends (user_id, friend_id, status) VALUES
+(1, 2, false);

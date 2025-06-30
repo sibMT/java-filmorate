@@ -142,17 +142,25 @@ public class FilmDbStorage implements FilmStorage {
 
     public List<Film> getPopularFilms(int count) {
         String sql = """
-                SELECT f.*, m.name as mpa_name, m.code as mpa_code,
-                       COUNT(l.user_id) as likes_count
+                SELECT
+                    f.film_id,
+                    f.name,
+                    f.description,
+                    f.release_date,
+                    f.duration,
+                    f.mpa_id,
+                    m.name AS mpa_name,
+                    m.code AS mpa_code,
+                    COUNT(l.user_id) AS likes_count
                 FROM films f
-                LEFT JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
+                JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
                 LEFT JOIN likes l ON f.film_id = l.film_id
-                GROUP BY f.film_id
+                GROUP BY f.film_id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name, m.code
                 ORDER BY likes_count DESC
                 LIMIT ?
                 """;
 
-        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+        List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> {
             Film film = new Film();
             film.setId(rs.getLong("film_id"));
             film.setName(rs.getString("name"));
@@ -169,6 +177,12 @@ public class FilmDbStorage implements FilmStorage {
             film.setLikesCount(rs.getInt("likes_count"));
             return film;
         }, count);
+
+        films.forEach(film -> {
+            film.setGenres(getFilmGenres(film.getId()));
+        });
+
+        return films;
     }
 
     @Override

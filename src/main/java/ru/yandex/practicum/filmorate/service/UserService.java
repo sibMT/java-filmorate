@@ -88,7 +88,6 @@ public class UserService {
     public void addFriend(Long userId, Long friendId) {
         userStorage.getUserById(userId);
         userStorage.getUserById(friendId);
-
         userStorage.addFriend(userId, friendId);
 
         if (userStorage.friendshipRequestExists(friendId, userId)) {

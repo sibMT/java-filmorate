@@ -24,26 +24,9 @@ MERGE INTO genres (genre_id, name) KEY (genre_id) VALUES
 (5, 'Документальный'),
 (6, 'Боевик');
 
--- Добавляем 18 пользователей
 INSERT INTO users (email, login, name, birthday) VALUES
 ('user1@example.com', 'login1', 'User One', '1990-01-01'),
-('user2@example.com', 'login2', 'User Two', '1995-05-05'),
-('user3@example.com', 'login3', 'User Three', '1990-01-01'),
-('user4@example.com', 'login4', 'User Four', '1995-05-05'),
-('user5@example.com', 'login5', 'User Five', '1990-01-01'),
-('user6@example.com', 'login6', 'User Six', '1995-05-05'),
-('user7@example.com', 'login7', 'User Seven', '1990-01-01'),
-('user8@example.com', 'login8', 'User Eight', '1995-05-05'),
-('user9@example.com', 'login9', 'User Nine', '1990-01-01'),
-('user10@example.com', 'login10', 'User Ten', '1995-05-05'),
-('user11@example.com', 'login11', 'User Eleven', '1990-01-01'),
-('user12@example.com', 'login12', 'User Twelve', '1995-05-05'),
-('user13@example.com', 'login13', 'User Thirteen', '1990-01-01'),
-('user14@example.com', 'login14', 'User Fourteen', '1995-05-05'),
-('user15@example.com', 'login15', 'User Fifteen', '1990-01-01'),
-('user16@example.com', 'login16', 'User Sixteen', '1995-05-05'),
-('user17@example.com', 'login17', 'User Seventeen', '1990-01-01'),
-('user18@example.com', 'login18', 'User Eighteen', '1995-05-05');
+('user2@example.com', 'login2', 'User Two', '1995-05-05');
 
 INSERT INTO films (name, description, release_date, duration, mpa_id) VALUES
 ('Film 1', 'Description 1', '2000-01-01', 120, 1),

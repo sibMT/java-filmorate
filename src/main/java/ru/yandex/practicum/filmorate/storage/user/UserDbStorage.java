@@ -107,7 +107,7 @@ public class UserDbStorage implements UserStorage {
     public List<User> getFriends(Long userId) {
         String sql = "SELECT u.* FROM users u "
                 + "JOIN friends f ON u.user_id = f.friend_id "
-                + "WHERE f.user_id = ? AND f.status = true";
+                + "WHERE f.user_id = ?";
         return jdbcTemplate.query(sql, new UserRowMapper(), userId);
     }
 
@@ -156,6 +156,13 @@ public class UserDbStorage implements UserStorage {
                 friendId, userId
         );
     }
+    public List<User> getConfirmedFriends(Long userId) {
+        String sql = "SELECT u.* FROM users u "
+                + "JOIN friends f ON u.user_id = f.friend_id "
+                + "WHERE f.user_id = ? AND f.status = true";
+        return jdbcTemplate.query(sql, new UserRowMapper(), userId);
+    }
+
 
     private boolean userNotExists(Long userId) {
         return !userExists(userId);

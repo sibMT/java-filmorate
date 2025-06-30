@@ -40,11 +40,27 @@ class UserDbStorageTest {
     void getAllUsers() {
         Collection<User> users = userStorage.getAllUsers();
         assertThat(users)
-                .hasSize(2)
+                .hasSize(18)
                 .extracting(User::getEmail)
                 .containsExactlyInAnyOrder(
                         "user1@example.com",
-                        "user2@example.com"
+                        "user2@example.com",
+                        "user3@example.com",
+                        "user4@example.com",
+                        "user5@example.com",
+                        "user6@example.com",
+                        "user7@example.com",
+                        "user8@example.com",
+                        "user9@example.com",
+                        "user10@example.com",
+                        "user11@example.com",
+                        "user12@example.com",
+                        "user13@example.com",
+                        "user14@example.com",
+                        "user15@example.com",
+                        "user16@example.com",
+                        "user17@example.com",
+                        "user18@example.com"
                 );
     }
 
@@ -55,7 +71,7 @@ class UserDbStorageTest {
 
         assertThat(addedUser.getId()).isNotNull();
         assertThat(addedUser.getEmail()).isEqualTo("new@example.com");
-        assertThat(userStorage.getAllUsers()).hasSize(3);
+        assertThat(userStorage.getAllUsers()).hasSize(19);
     }
 
     @Test
@@ -82,14 +98,14 @@ class UserDbStorageTest {
     void deleteUser() {
         assertThat(userStorage.getAllUsers())
                 .extracting(User::getId)
-                .containsExactly(1L, 2L);
+                .containsExactly(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L, 12L, 13L, 14L, 15L, 16L, 17L, 18L);
 
         userStorage.deleteUser(1L);
 
         assertThat(userStorage.getAllUsers())
-                .hasSize(1)
+                .hasSize(17)
                 .extracting(User::getId)
-                .containsExactly(2L);
+                .containsExactly(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L, 12L, 13L, 14L, 15L, 16L, 17L, 18L);
 
         assertThrows(NotFoundException.class, () -> userStorage.getUserById(1L));
     }

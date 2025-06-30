@@ -5,18 +5,13 @@ INSERT INTO mpa_ratings (mpa_id, name, code) VALUES
 (4, 'R', 'R'),
 (5, 'NC-17', 'NC-17');
 
-INSERT INTO genres (genre_id, name)
- SELECT * FROM (VALUES
+INSERT INTO genres (genre_id, name) VALUES
 (1, 'Комедия'),
 (2, 'Драма'),
 (3, 'Мультфильм'),
 (4, 'Триллер'),
 (5, 'Документальный'),
-(6, 'Боевик')
-)AS new_genres(genre_id,name)
-WHERE NOT EXISTS (
-SELECT 1 FROM genres
-WHERE genre_id = new_genres.genres_id)
+(6, 'Боевик');
 
 
 INSERT INTO users (email, login, name, birthday) VALUES

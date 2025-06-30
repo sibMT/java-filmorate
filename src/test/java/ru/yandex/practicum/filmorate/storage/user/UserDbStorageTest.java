@@ -141,6 +141,7 @@ class UserDbStorageTest {
 
     @Test
     void removeFriend() {
+
         userStorage.addFriend(1L, 2L);
         userStorage.addFriend(2L, 1L);
         userStorage.confirmFriendship(1L, 2L);

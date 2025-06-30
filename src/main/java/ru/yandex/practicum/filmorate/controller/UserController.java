@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 
@@ -67,6 +68,9 @@ public class UserController {
     @GetMapping("/{userId}/friends")
     public List<User> getFriends(@PathVariable Long userId) {
         log.info("Getting friends for user: {}", userId);
+        if (!userService.userExists(userId)) {
+            throw new NotFoundException("User not found");
+        }
         return userService.getFriends(userId);
     }
 

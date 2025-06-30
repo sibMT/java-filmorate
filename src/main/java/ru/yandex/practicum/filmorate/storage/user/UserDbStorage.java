@@ -151,10 +151,7 @@ public class UserDbStorage implements UserStorage {
         String sql = "UPDATE friends SET status = true "
                 + "WHERE (user_id = ? AND friend_id = ?) "
                 + "OR (user_id = ? AND friend_id = ?)";
-        jdbcTemplate.update(sql,
-                userId, friendId,
-                friendId, userId
-        );
+        jdbcTemplate.update(sql, userId, friendId, friendId, userId);
     }
 
     private boolean userNotExists(Long userId) {

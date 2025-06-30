@@ -46,8 +46,10 @@ public class Film {
     public void setLikes(Set<Long> likes) {
         this.likes = likes != null ? likes : new HashSet<>();
     }
-
-    @Setter
     private int likesCount;
+
+    public void setLikesCount(int likesCount) {
+        this.likesCount = likesCount;
+    }
 
 }

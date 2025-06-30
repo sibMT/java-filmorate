@@ -7,16 +7,15 @@ import java.util.List;
 import java.util.Optional;
 
 public interface FilmStorage {
-
-    Optional<Film> getFilmById(Long id);
-
     Film addFilm(Film film);
 
     Film updateFilm(Film film);
 
-    void deleteFilm(Long id);
+    Optional<Film> getFilmById(Long id);
 
     Collection<Film> getAllFilms();
+
+    void deleteFilm(Long id);
 
     void addLike(Long filmId, Long userId);
 

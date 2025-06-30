@@ -46,7 +46,6 @@ CREATE TABLE IF NOT EXISTS film_genres (
 CREATE TABLE IF NOT EXISTS friends (
     user_id BIGINT NOT NULL,
     friend_id BIGINT NOT NULL,
-    status BOOLEAN DEFAULT FALSE,
     PRIMARY KEY (user_id, friend_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
     FOREIGN KEY (friend_id) REFERENCES users(user_id) ON DELETE CASCADE
@@ -59,3 +58,10 @@ CREATE TABLE IF NOT EXISTS likes (
     CONSTRAINT fk_film_like FOREIGN KEY (film_id) REFERENCES films(film_id) ON DELETE CASCADE,
     CONSTRAINT fk_user_like FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
+
+CREATE INDEX idx_friends_user ON friends(user_id);
+CREATE INDEX idx_friends_friend ON friends(friend_id);
+CREATE INDEX idx_film_genres_film ON film_genres(film_id);
+CREATE INDEX idx_likes_film ON likes(film_id);
+CREATE INDEX idx_likes_user ON likes(user_id);
+CREATE INDEX idx_films_mpa ON films(mpa_id);

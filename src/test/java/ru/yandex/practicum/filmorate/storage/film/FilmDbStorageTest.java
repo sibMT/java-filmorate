@@ -32,7 +32,7 @@ class FilmDbStorageTest {
     }
 
     @Test
-    void addFilm_shouldAddAndRetrieveFilm() {
+    void addFilm() {
         Film newFilm = Film.builder()
                 .name("New Film")
                 .description("New Description")
@@ -54,7 +54,7 @@ class FilmDbStorageTest {
     }
 
     @Test
-    void updateFilm_shouldUpdateExistingFilm() {
+    void updateFilm() {
         Film existingFilm = filmStorage.getFilmById(1L).orElseThrow();
         existingFilm.setName("Updated Film");
         existingFilm.setDuration(150);
@@ -87,7 +87,7 @@ class FilmDbStorageTest {
     }
 
     @Test
-    void getAllFilms_shouldReturnAllFilms() {
+    void getAllFilms() {
         Collection<Film> films = filmStorage.getAllFilms();
         assertThat(films)
                 .hasSize(2)
@@ -96,7 +96,9 @@ class FilmDbStorageTest {
     }
 
     @Test
-    void deleteFilm_shouldRemoveFilm() {
+    void deleteFilm() {
+        assertThat(filmStorage.getAllFilms()).hasSize(2);
+
         filmStorage.deleteFilm(1L);
 
         Optional<Film> deletedFilm = filmStorage.getFilmById(1L);
@@ -107,10 +109,22 @@ class FilmDbStorageTest {
                 .hasSize(1)
                 .extracting(Film::getName)
                 .containsExactly("Film 2");
+
+        Integer genreLinks = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM film_genres WHERE film_id = 1",
+                Integer.class
+        );
+        assertThat(genreLinks).isZero();
+
+        Integer likes = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM likes WHERE film_id = 1",
+                Integer.class
+        );
+        assertThat(likes).isZero();
     }
 
     @Test
-    void addLike_shouldIncrementLikesCount() {
+    void addLike() {
         filmStorage.addLike(1L, 1L);
         filmStorage.addLike(1L, 2L);
 
@@ -119,7 +133,7 @@ class FilmDbStorageTest {
     }
 
     @Test
-    void removeLike_shouldDecrementLikesCount() {
+    void removeLike() {
         filmStorage.addLike(1L, 1L);
         filmStorage.addLike(1L, 2L);
         filmStorage.removeLike(1L, 2L);
@@ -129,7 +143,7 @@ class FilmDbStorageTest {
     }
 
     @Test
-    void getPopularFilms_shouldReturnOrderedByLikes() {
+    void getPopularFilms() {
         filmStorage.addLike(1L, 1L);
         filmStorage.addLike(1L, 2L);
         filmStorage.addLike(2L, 1L);
@@ -139,7 +153,7 @@ class FilmDbStorageTest {
         assertThat(popularFilms)
                 .hasSize(2)
                 .extracting(Film::getId)
-                .containsExactly(1L, 2L); // Фильм 1 имеет 2 лайка, фильм 2 - 1 лайк
+                .containsExactly(1L, 2L);
     }
 
 }

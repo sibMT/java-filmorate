@@ -142,15 +142,15 @@ public class FilmDbStorage implements FilmStorage {
 
     public List<Film> getPopularFilms(int count) {
         String sql = """
-        SELECT f.*, m.name as mpa_name, m.code as mpa_code, 
-               COUNT(l.user_id) as likes_count
-        FROM films f
-        LEFT JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
-        LEFT JOIN likes l ON f.film_id = l.film_id
-        GROUP BY f.film_id
-        ORDER BY likes_count DESC
-        LIMIT ?
-        """;
+                SELECT f.*, m.name as mpa_name, m.code as mpa_code,
+                       COUNT(l.user_id) as likes_count
+                FROM films f
+                LEFT JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
+                LEFT JOIN likes l ON f.film_id = l.film_id
+                GROUP BY f.film_id
+                ORDER BY likes_count DESC
+                LIMIT ?
+                """;
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
             Film film = new Film();

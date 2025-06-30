@@ -81,16 +81,22 @@ public class UserDbStorage implements UserStorage {
         if (!userExists(userId)) throw new NotFoundException("User not found: " + userId);
         if (!userExists(friendId)) throw new NotFoundException("User not found: " + friendId);
 
-        String sql = "MERGE INTO friends (user_id, friend_id) KEY(user_id, friend_id) VALUES (?, ?), (?, ?)";
-        jdbcTemplate.update(sql, userId, friendId, friendId, userId);
+        jdbcTemplate.update(
+                "MERGE INTO friends (user_id, friend_id) KEY(user_id, friend_id) VALUES (?, ?)",
+                userId, friendId
+        );
+
+        jdbcTemplate.update(
+                "MERGE INTO friends (user_id, friend_id) KEY(user_id, friend_id) VALUES (?, ?)",
+                friendId, userId
+        );
     }
 
     @Override
     public void removeFriend(Long userId, Long friendId) {
         jdbcTemplate.update(
-                "DELETE FROM friends WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)",
-                userId, friendId,
-                friendId, userId
+                "DELETE FROM friends WHERE user_id = ? AND friend_id = ?",
+                userId, friendId
         );
     }
 
@@ -99,7 +105,7 @@ public class UserDbStorage implements UserStorage {
         String sql = """
                 SELECT u.user_id, u.email, u.login, u.name, u.birthday
                 FROM friends f
-                JOIN users u ON f.friend_id = u.user_id
+                JOIN users u ON u.user_id = f.friend_id
                 WHERE f.user_id = ?""";
 
         return jdbcTemplate.query(sql, this::mapRowToUser, userId);

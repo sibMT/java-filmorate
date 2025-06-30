@@ -156,19 +156,14 @@ public class FilmDbStorage implements FilmStorage {
                     f.mpa_id,
                     m.name AS mpa_name,
                     m.code AS mpa_code,
-                    COUNT(l.user_id) AS likes_count
+                    (SELECT COUNT(*) FROM likes l WHERE l.film_id = f.film_id) AS likes_count
                 FROM films f
                 JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
-                LEFT JOIN likes l ON f.film_id = l.film_id
-                GROUP BY f.film_id, m.mpa_id
                 ORDER BY likes_count DESC
                 LIMIT ?""";
 
-        List<Film> films = jdbcTemplate.query(sql, new FilmRowMapper(), count);
-        films.forEach(film -> {
-            film.setGenres(getFilmGenres(film.getId()));
-            film.setLikes(getFilmLikes(film.getId()));
-        });
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, count);
+        films.forEach(film -> film.setGenres(getFilmGenres(film.getId())));
         return films;
     }
 

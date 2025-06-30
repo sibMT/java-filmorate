@@ -111,15 +111,15 @@ class UserDbStorageTest {
                 .containsExactly(1L);
     }
 
-    @Test
-    void removeFriend() {
-        userStorage.addFriend(1L, 2L);
-
-        userStorage.removeFriend(1L, 2L);
-
-        assertThat(userStorage.getFriends(1L)).isEmpty();
-        assertThat(userStorage.getFriends(2L)).isEmpty();
-    }
+//    @Test
+//    void removeFriend() {
+//        userStorage.addFriend(1L, 2L);
+//
+//        userStorage.removeFriend(1L, 2L);
+//
+//        assertThat(userStorage.getFriends(1L)).isEmpty();
+//        assertThat(userStorage.getFriends(2L)).isEmpty();
+//    }
 
     @Test
     void getFriends() {

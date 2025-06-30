@@ -138,6 +138,8 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public List<User> getCommonFriends(Long userId1, Long userId2) {
+        log.debug("Поиск общих друзей для {} и {}", userId1, userId2);
+
         String sql = """
                 SELECT u.*
                 FROM friends f1
@@ -145,7 +147,10 @@ public class UserDbStorage implements UserStorage {
                 JOIN users u ON f1.friend_id = u.user_id
                 WHERE f1.user_id = ? AND f2.user_id = ?
                 """;
-        return jdbcTemplate.query(sql, new UserRowMapper(), userId1, userId2);
+
+        List<User> friends = jdbcTemplate.query(sql, new UserRowMapper(), userId1, userId2);
+        log.debug("Найдено общих друзей: {}", friends.size());
+        return friends;
     }
 
     public boolean userExists(Long userId) {
@@ -162,12 +167,13 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void confirmFriendship(Long userId, Long friendId) {
-        String sql = "UPDATE friends SET status = true WHERE user_id = ? AND friend_id = ?";
-        int updated = jdbcTemplate.update(sql, friendId, userId);
+        String sql1 = "UPDATE friends SET status = true WHERE user_id = ? AND friend_id = ?";
+        String sql2 = "UPDATE friends SET status = true WHERE user_id = ? AND friend_id = ?";
 
-        if (updated > 0) {
-            log.info("Дружба подтверждена: {} и {}", userId, friendId);
-        }
+        jdbcTemplate.update(sql1, userId, friendId);
+        jdbcTemplate.update(sql2, friendId, userId);
+
+        log.info("Дружба подтверждена между {} и {}", userId, friendId);
     }
 
     private boolean userNotExists(Long userId) {

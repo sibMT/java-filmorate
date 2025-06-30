@@ -144,4 +144,5 @@ class UserDbStorageTest {
                 .hasSize(1)
                 .containsExactly(2L);
     }
+
 }

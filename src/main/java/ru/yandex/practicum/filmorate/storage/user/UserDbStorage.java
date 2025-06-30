@@ -90,22 +90,18 @@ public class UserDbStorage implements UserStorage {
         userExists(userId);
         userExists(friendId);
 
-        if (friendshipExists(userId, friendId)) {
-            return;
+        if (!friendshipExists(userId, friendId)) {
+            jdbcTemplate.update(
+                    "INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, false)",
+                    userId, friendId
+            );
         }
-
-        jdbcTemplate.update(
-                "INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, false)",
-                userId, friendId
-        );
 
         if (friendshipExists(friendId, userId)) {
-            jdbcTemplate.update("UPDATE friends SET status = true WHERE user_id = ? AND friend_id = ?",
-                    userId, friendId);
-            jdbcTemplate.update("UPDATE friends SET status = true WHERE user_id = ? AND friend_id = ?",
-                    friendId, userId);
+            confirmFriendship(userId, friendId);
         }
     }
+
 
     @Override
     public void removeFriend(Long userId, Long friendId) {
@@ -118,10 +114,11 @@ public class UserDbStorage implements UserStorage {
     @Override
     public List<User> getFriends(Long userId) {
         String sql = """
-                SELECT u.* FROM users u
-                JOIN friends f ON u.user_id = f.friend_id
-                WHERE f.user_id = ? AND f.status = true
-                ORDER BY u.user_id""";
+            SELECT u.*
+            FROM users u
+            JOIN friends f ON u.user_id = f.friend_id
+            WHERE f.user_id = ? AND f.status = true
+            ORDER BY u.user_id""";
 
         return jdbcTemplate.query(sql, new UserRowMapper(), userId);
     }
@@ -167,24 +164,5 @@ public class UserDbStorage implements UserStorage {
                         "WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)",
                 userId, friendId, friendId, userId
         );
-    }
-
-    private boolean userNotExists(Long userId) {
-        return !userExists(userId);
-    }
-
-    private void removeFriendship(Long user1, Long user2) {
-        String sql = "DELETE FROM friends WHERE user_id = ? AND friend_id = ?";
-        int rowsDeleted = jdbcTemplate.update(sql, user1, user2);
-        if (rowsDeleted > 0) {
-            log.info("Удалена дружба: {} -> {}", user1, user2);
-        }
-    }
-
-    @Override
-    public boolean friendshipRequestExists(Long userId, Long friendId) {
-        String sql = "SELECT COUNT(*) FROM friends WHERE user_id = ? AND friend_id = ?";
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId, friendId);
-        return count != null && count > 0;
     }
 }

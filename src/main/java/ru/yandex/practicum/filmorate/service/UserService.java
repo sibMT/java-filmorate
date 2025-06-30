@@ -90,7 +90,7 @@ public class UserService {
         userStorage.getUserById(friendId);
         userStorage.addFriend(userId, friendId);
 
-        if (userStorage.friendshipRequestExists(friendId, userId)) {
+        if (userStorage.friendshipExists(friendId, userId)) {
             userStorage.confirmFriendship(userId, friendId);
         }
     }

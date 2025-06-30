@@ -151,14 +151,16 @@ public class FilmDbStorage implements FilmStorage {
                     f.mpa_id,
                     m.name AS mpa_name,
                     m.code AS mpa_code,
-                    COUNT(l.user_id) AS likes_count
+                    COALESCE(l.like_count, 0) AS likes_count
                 FROM films f
                 JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
-                LEFT JOIN likes l ON f.film_id = l.film_id
-                GROUP BY f.film_id
-                ORDER BY COUNT(l.user_id) DESC
-                LIMIT ?
-                """;
+                LEFT JOIN (
+                    SELECT film_id, COUNT(*) AS like_count
+                    FROM likes
+                    GROUP BY film_id
+                ) l ON f.film_id = l.film_id
+                ORDER BY likes_count DESC, f.film_id DESC
+                LIMIT ?""";
 
         List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> {
             Film film = new Film();
@@ -167,6 +169,7 @@ public class FilmDbStorage implements FilmStorage {
             film.setDescription(rs.getString("description"));
             film.setReleaseDate(rs.getDate("release_date").toLocalDate());
             film.setDuration(rs.getInt("duration"));
+            film.setLikesCount(rs.getInt("likes_count"));
 
             MpaRating mpa = new MpaRating();
             mpa.setId(rs.getInt("mpa_id"));
@@ -174,11 +177,11 @@ public class FilmDbStorage implements FilmStorage {
             mpa.setCode(rs.getString("mpa_code"));
             film.setMpa(mpa);
 
-            film.setLikesCount(rs.getInt("likes_count"));
             return film;
         }, count);
 
         films.forEach(film -> film.setGenres(getFilmGenres(film.getId())));
+
         return films;
     }
 

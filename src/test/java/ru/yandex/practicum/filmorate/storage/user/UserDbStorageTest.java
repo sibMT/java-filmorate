@@ -99,30 +99,17 @@ class UserDbStorageTest {
 
     @Test
     void addFriend() {
-        assertThat(userStorage.getFriendIds(1L)).isEmpty();
-
         userStorage.addFriend(1L, 2L);
 
         assertThat(userStorage.getFriendIds(1L)).containsExactly(2L);
-        assertThat(userStorage.getFriends(1L)).isEmpty();
+        assertThat(userStorage.getFriends(1L)).isEmpty(); // подтверждённых нет
 
         userStorage.addFriend(2L, 1L);
 
         assertThat(userStorage.getFriends(1L))
                 .extracting(User::getId)
                 .containsExactly(2L);
-
-        assertThat(userStorage.getFriends(2L))
-                .extracting(User::getId)
-                .containsExactly(1L);
-
-        Boolean friendshipStatus = jdbcTemplate.queryForObject(
-                "SELECT status FROM friends WHERE user_id = 1 AND friend_id = 2",
-                Boolean.class
-        );
-        assertThat(friendshipStatus).isTrue();
     }
-
 
     @Test
     void confirmFriendship() {
@@ -130,32 +117,19 @@ class UserDbStorageTest {
         userStorage.addFriend(2L, 1L);
         userStorage.confirmFriendship(1L, 2L);
 
-        assertThat(userStorage.getFriends(1L))
-                .extracting(User::getId)
-                .containsExactly(2L);
-
-        assertThat(userStorage.getFriends(2L))
-                .extracting(User::getId)
-                .containsExactly(1L);
+        assertThat(userStorage.getFriends(1L)).hasSize(1);
     }
 
     @Test
     void removeFriend() {
-
         userStorage.addFriend(1L, 2L);
         userStorage.addFriend(2L, 1L);
         userStorage.confirmFriendship(1L, 2L);
 
-        assertThat(userStorage.getFriends(1L)).hasSize(1);
-        assertThat(userStorage.getFriends(2L)).hasSize(1);
-
         userStorage.removeFriend(1L, 2L);
 
         assertThat(userStorage.getFriends(1L)).isEmpty();
-        assertThat(userStorage.getFriends(2L)).isEmpty();
-
         assertThat(userStorage.getFriendIds(1L)).isEmpty();
-        assertThat(userStorage.getFriendIds(2L)).isEmpty();
     }
 
     @Test

@@ -18,7 +18,6 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -93,11 +92,7 @@ public class FilmService {
     }
 
     public List<Film> getPopularFilms(int count) {
-        return filmStorage.getAllFilms().stream()
-                .filter(f -> f.getLikes() != null)
-                .sorted(Comparator.comparingInt(f -> -f.getLikes().size()))
-                .limit(Math.max(count, 1))
-                .collect(Collectors.toList());
+        return filmStorage.getPopularFilms(count);
     }
 
     private Film getExistingFilm(Long id) {

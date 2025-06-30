@@ -10,6 +10,7 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.mappers.FilmRowMapper;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.MpaRating;
 
 import java.util.*;
 
@@ -139,31 +140,35 @@ public class FilmDbStorage implements FilmStorage {
         jdbcTemplate.update(sql, filmId, userId);
     }
 
-    @Override
     public List<Film> getPopularFilms(int count) {
         String sql = """
-                SELECT f.*, m.name AS mpa_name, m.code AS mpa_code,
-                       COUNT(l.user_id) AS likes_count
-                FROM films f
-                LEFT JOIN likes l ON f.film_id = l.film_id
-                JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
-                GROUP BY f.film_id
-                ORDER BY COUNT(l.user_id) DESC, f.film_id
-                LIMIT ?
-                """;
+        SELECT f.*, m.name as mpa_name, m.code as mpa_code, 
+               COUNT(l.user_id) as likes_count
+        FROM films f
+        LEFT JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
+        LEFT JOIN likes l ON f.film_id = l.film_id
+        GROUP BY f.film_id
+        ORDER BY likes_count DESC
+        LIMIT ?
+        """;
 
-        List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> {
-            Film film = new FilmRowMapper().mapRow(rs, rowNum);
+        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+            Film film = new Film();
+            film.setId(rs.getLong("film_id"));
+            film.setName(rs.getString("name"));
+            film.setDescription(rs.getString("description"));
+            film.setReleaseDate(rs.getDate("release_date").toLocalDate());
+            film.setDuration(rs.getInt("duration"));
+
+            MpaRating mpa = new MpaRating();
+            mpa.setId(rs.getInt("mpa_id"));
+            mpa.setName(rs.getString("mpa_name"));
+            mpa.setCode(rs.getString("mpa_code"));
+            film.setMpa(mpa);
+
             film.setLikesCount(rs.getInt("likes_count"));
             return film;
         }, count);
-
-        films.forEach(film -> {
-            film.setGenres(getFilmGenres(film.getId()));
-            film.setLikes(getFilmLikes(film.getId()));
-        });
-
-        return films;
     }
 
     @Override

@@ -167,13 +167,11 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void confirmFriendship(Long userId, Long friendId) {
-        String sql1 = "UPDATE friends SET status = true WHERE user_id = ? AND friend_id = ?";
-        String sql2 = "UPDATE friends SET status = true WHERE user_id = ? AND friend_id = ?";
+        String sql = "UPDATE friends SET status = true " +
+                "WHERE (user_id = ? AND friend_id = ?) " +
+                "OR (user_id = ? AND friend_id = ?)";
 
-        jdbcTemplate.update(sql1, userId, friendId);
-        jdbcTemplate.update(sql2, friendId, userId);
-
-        log.info("Дружба подтверждена между {} и {}", userId, friendId);
+        jdbcTemplate.update(sql, userId, friendId, friendId, userId);
     }
 
     private boolean userNotExists(Long userId) {

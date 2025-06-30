@@ -14,8 +14,7 @@ import java.util.Collection;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @AutoConfigureTestDatabase
@@ -95,31 +94,41 @@ class UserDbStorageTest {
     }
 
     @Test
-    void addFriend() {
+    void addFriend_shouldCreateMutualFriendship() {
         userStorage.addFriend(1L, 2L);
 
-        List<User> user1Friends = userStorage.getFriends(1L);
-        assertThat(user1Friends)
+        assertTrue(userStorage.hasFriend(1L, 2L));
+        assertTrue(userStorage.hasFriend(2L, 1L));
+
+        List<User> user6Friends = userStorage.getFriends(1L);
+        assertThat(user6Friends)
                 .hasSize(1)
                 .extracting(User::getId)
                 .containsExactly(2L);
 
-        List<User> user2Friends = userStorage.getFriends(2L);
-        assertThat(user2Friends)
+        List<User> user7Friends = userStorage.getFriends(2L);
+        assertThat(user7Friends)
                 .hasSize(1)
                 .extracting(User::getId)
                 .containsExactly(1L);
     }
 
-//    @Test
-//    void removeFriend() {
-//        userStorage.addFriend(1L, 2L);
-//
-//        userStorage.removeFriend(1L, 2L);
-//
-//        assertThat(userStorage.getFriends(1L)).isEmpty();
-//        assertThat(userStorage.getFriends(2L)).isEmpty();
-//    }
+    @Test
+    void removeFriend_shouldRemoveOnlyOneDirection() {
+
+        userStorage.addFriend(1L, 2L);
+
+        userStorage.removeFriend(2L, 1L);
+
+        assertFalse(userStorage.hasFriend(2L, 1L));
+        assertTrue(userStorage.hasFriend(1L, 2L));
+
+        List<User> user17Friends = userStorage.getFriends(1L);
+        assertThat(user17Friends).hasSize(1);
+
+        List<User> userFriends = userStorage.getFriends(2L);
+        assertThat(userFriends).isEmpty();
+    }
 
     @Test
     void getFriends() {
@@ -178,5 +187,21 @@ class UserDbStorageTest {
     @Test
     void removeFriend_shouldNotThrowWhenFriendshipNotExist() {
         assertDoesNotThrow(() -> userStorage.removeFriend(1L, 2L));
+    }
+
+    @Test
+    void friendshipShouldBeMutual() {
+        Long user1Id = 1L;
+        Long user2Id = 2L;
+
+        userStorage.addFriend(user1Id, user2Id);
+
+        assertThat(userStorage.getFriends(user1Id))
+                .extracting(User::getId)
+                .containsExactly(user2Id);
+
+        assertThat(userStorage.getFriends(user2Id))
+                .extracting(User::getId)
+                .containsExactly(user1Id);
     }
 }

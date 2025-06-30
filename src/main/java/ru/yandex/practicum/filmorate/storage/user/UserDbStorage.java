@@ -78,18 +78,15 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void addFriend(Long userId, Long friendId) {
-        if (!userExists(userId)) throw new NotFoundException("User not found: " + userId);
-        if (!userExists(friendId)) throw new NotFoundException("User not found: " + friendId);
 
-        jdbcTemplate.update(
-                "MERGE INTO friends (user_id, friend_id) KEY(user_id, friend_id) VALUES (?, ?)",
-                userId, friendId
-        );
+        if (!userExists(userId) || !userExists(friendId)) {
+            throw new NotFoundException("User not found");
+        }
 
-        jdbcTemplate.update(
-                "MERGE INTO friends (user_id, friend_id) KEY(user_id, friend_id) VALUES (?, ?)",
-                friendId, userId
-        );
+        String sql = "MERGE INTO friends KEY(user_id, friend_id) VALUES (?, ?)";
+
+        jdbcTemplate.update(sql, userId, friendId);
+        jdbcTemplate.update(sql, friendId, userId);
     }
 
     @Override
@@ -139,5 +136,11 @@ public class UserDbStorage implements UserStorage {
                 .name(rs.getString("name"))
                 .birthday(rs.getDate("birthday").toLocalDate())
                 .build();
+    }
+
+    public boolean hasFriend(Long userId, Long friendId) {
+        String sql = "SELECT COUNT(*) FROM friends WHERE user_id = ? AND friend_id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId, friendId);
+        return count != null && count > 0;
     }
 }

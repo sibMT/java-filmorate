@@ -114,20 +114,14 @@ class UserDbStorageTest {
     }
 
     @Test
-    void removeFriend_shouldRemoveOnlyOneDirection() {
-
+    void removeFriend_shouldRemoveBothDirections() {
         userStorage.addFriend(1L, 2L);
+        userStorage.addFriend(2L, 1L);
 
         userStorage.removeFriend(2L, 1L);
 
         assertFalse(userStorage.hasFriend(2L, 1L));
-        assertTrue(userStorage.hasFriend(1L, 2L));
-
-        List<User> user17Friends = userStorage.getFriends(1L);
-        assertThat(user17Friends).hasSize(1);
-
-        List<User> userFriends = userStorage.getFriends(2L);
-        assertThat(userFriends).isEmpty();
+        assertFalse(userStorage.hasFriend(1L, 2L));
     }
 
     @Test

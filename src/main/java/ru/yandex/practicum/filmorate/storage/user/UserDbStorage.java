@@ -6,10 +6,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.mappers.UserRowMapper;
 import ru.yandex.practicum.filmorate.model.User;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 
 @Slf4j
@@ -58,25 +57,17 @@ public class UserDbStorage implements UserStorage {
     public User getUserById(Long id) {
         String sql = "SELECT * FROM users WHERE user_id = ?";
         try {
-            User user = jdbcTemplate.queryForObject(sql, this::mapRowToUser, id);
-            if (user != null) {
-                user.setFriends(getUserFriendIds(id));
-            }
-            return user;
+            return jdbcTemplate.queryForObject(sql, new UserRowMapper(jdbcTemplate), id);
         } catch (EmptyResultDataAccessException e) {
             throw new NotFoundException("Пользователь с ID " + id + " не найден.");
         }
     }
 
-
     @Override
     public Collection<User> getAllUsers() {
         String sql = "SELECT * FROM users";
-        List<User> users = jdbcTemplate.query(sql, this::mapRowToUser);
-        users.forEach(user -> user.setFriends(getUserFriendIds(user.getId())));
-        return users;
+        return jdbcTemplate.query(sql, new UserRowMapper(jdbcTemplate));
     }
-
 
     @Override
     public void deleteUser(Long id) {
@@ -100,13 +91,11 @@ public class UserDbStorage implements UserStorage {
         );
     }
 
-
     @Override
     public void removeFriend(Long userId, Long friendId) {
         jdbcTemplate.update("DELETE FROM friends WHERE user_id = ? AND friend_id = ?", userId, friendId);
         jdbcTemplate.update("DELETE FROM friends WHERE user_id = ? AND friend_id = ?", friendId, userId);
     }
-
 
     @Override
     public List<User> getFriends(Long userId) {
@@ -116,7 +105,7 @@ public class UserDbStorage implements UserStorage {
                 JOIN users u ON u.user_id = f.friend_id
                 WHERE f.user_id = ?""";
 
-        return jdbcTemplate.query(sql, this::mapRowToUser, userId);
+        return jdbcTemplate.query(sql, new UserRowMapper(jdbcTemplate), userId);
     }
 
     @Override
@@ -128,7 +117,7 @@ public class UserDbStorage implements UserStorage {
                 JOIN users u ON f1.friend_id = u.user_id
                 WHERE f1.user_id = ? AND f2.user_id = ?""";
 
-        return jdbcTemplate.query(sql, this::mapRowToUser, userId1, userId2);
+        return jdbcTemplate.query(sql, new UserRowMapper(jdbcTemplate), userId1, userId2);
     }
 
     @Override
@@ -139,25 +128,11 @@ public class UserDbStorage implements UserStorage {
         );
     }
 
-    private User mapRowToUser(ResultSet rs, int rowNum) throws SQLException {
-        return User.builder()
-                .id(rs.getLong("user_id"))
-                .email(rs.getString("email"))
-                .login(rs.getString("login"))
-                .name(rs.getString("name"))
-                .birthday(rs.getDate("birthday").toLocalDate())
-                .build();
-    }
-
     public boolean hasFriend(Long userId, Long friendId) {
         String sql = "SELECT COUNT(*) FROM friends WHERE user_id = ? AND friend_id = ?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId, friendId);
         return count != null && count > 0;
     }
-
-    public Set<Long> getUserFriendIds(Long userId) {
-        String sql = "SELECT friend_id FROM friends WHERE user_id = ?";
-        return new HashSet<>(jdbcTemplate.queryForList(sql, Long.class, userId));
-    }
-
 }
+
+

@@ -14,6 +14,7 @@ import java.util.*;
 @Slf4j
 @Repository
 public class UserDbStorage implements UserStorage {
+
     private final JdbcTemplate jdbcTemplate;
     private final SimpleJdbcInsert jdbcInsert;
 
@@ -81,20 +82,13 @@ public class UserDbStorage implements UserStorage {
             throw new NotFoundException("User not found");
         }
 
-        jdbcTemplate.update(
-                "MERGE INTO friends KEY(user_id, friend_id) VALUES (?, ?)",
-                userId, friendId
-        );
-        jdbcTemplate.update(
-                "MERGE INTO friends KEY(user_id, friend_id) VALUES (?, ?)",
-                friendId, userId
-        );
+        String sql = "MERGE INTO friends KEY(user_id, friend_id) VALUES (?, ?)";
+        jdbcTemplate.update(sql, userId, friendId); // Только односторонняя дружба!
     }
 
     @Override
     public void removeFriend(Long userId, Long friendId) {
         jdbcTemplate.update("DELETE FROM friends WHERE user_id = ? AND friend_id = ?", userId, friendId);
-        jdbcTemplate.update("DELETE FROM friends WHERE user_id = ? AND friend_id = ?", friendId, userId);
     }
 
     @Override
@@ -103,7 +97,8 @@ public class UserDbStorage implements UserStorage {
                 SELECT u.user_id, u.email, u.login, u.name, u.birthday
                 FROM friends f
                 JOIN users u ON u.user_id = f.friend_id
-                WHERE f.user_id = ?""";
+                WHERE f.user_id = ?
+                """;
 
         return jdbcTemplate.query(sql, new UserRowMapper(jdbcTemplate), userId);
     }
@@ -111,11 +106,12 @@ public class UserDbStorage implements UserStorage {
     @Override
     public List<User> getCommonFriends(Long userId1, Long userId2) {
         String sql = """
-                SELECT u.*
+                SELECT u.user_id, u.email, u.login, u.name, u.birthday
                 FROM friends f1
                 JOIN friends f2 ON f1.friend_id = f2.friend_id
-                JOIN users u ON f1.friend_id = u.user_id
-                WHERE f1.user_id = ? AND f2.user_id = ?""";
+                JOIN users u ON u.user_id = f1.friend_id
+                WHERE f1.user_id = ? AND f2.user_id = ?
+                """;
 
         return jdbcTemplate.query(sql, new UserRowMapper(jdbcTemplate), userId1, userId2);
     }
@@ -123,9 +119,7 @@ public class UserDbStorage implements UserStorage {
     @Override
     public boolean userExists(Long userId) {
         String sql = "SELECT EXISTS(SELECT 1 FROM users WHERE user_id = ?)";
-        return Boolean.TRUE.equals(
-                jdbcTemplate.queryForObject(sql, Boolean.class, userId)
-        );
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(sql, Boolean.class, userId));
     }
 
     public boolean hasFriend(Long userId, Long friendId) {
@@ -134,5 +128,6 @@ public class UserDbStorage implements UserStorage {
         return count != null && count > 0;
     }
 }
+
 
 

@@ -3,14 +3,12 @@ package ru.yandex.practicum.filmorate.service;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.FilmNotFoundException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MpaRating;
-import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.genre.GenreStorage;
 import ru.yandex.practicum.filmorate.storage.mpa.MpaStorage;
@@ -24,12 +22,11 @@ import java.util.*;
 @RequiredArgsConstructor
 public class FilmService {
     private final FilmStorage filmStorage;
-    @Qualifier("filmDbStorage")
-    private static final LocalDate CINEMA_BIRTHDAY = LocalDate.of(1895, 12, 28);
     private final UserStorage userStorage;
     private final GenreStorage genreStorage;
     private final MpaStorage mpaStorage;
 
+    private static final LocalDate CINEMA_BIRTHDAY = LocalDate.of(1895, 12, 28);
 
     public Collection<Film> getAllFilms() {
         return filmStorage.getAllFilms();
@@ -49,9 +46,6 @@ public class FilmService {
             throw new ValidationException("MPA rating must be specified");
         }
         validateFilm(film);
-        if (film.getLikes() == null) {
-            film.setLikes(new HashSet<>());
-        }
         return filmStorage.addFilm(film);
     }
 
@@ -59,6 +53,7 @@ public class FilmService {
         Film existingFilm = getExistingFilm(film.getId());
         validateFilm(film);
         updateFilmFields(film, existingFilm);
+
         if (film.getMpa() != null) {
             existingFilm.setMpa(film.getMpa());
         }
@@ -71,21 +66,29 @@ public class FilmService {
     }
 
     public void addLike(Long filmId, Long userId) {
-        Film film = getExistingFilm(filmId);
-        User user = userStorage.getUserById(userId);
+        if (!filmStorage.filmExists(filmId)) {
+            throw new NotFoundException("Фильм с ID " + filmId + " не найден");
+        }
 
-        if (!film.getLikes().add(userId)) {
+        if (!userStorage.userExists(userId)) {
+            throw new NotFoundException("Пользователь с ID " + userId + " не найден");
+        }
+
+        Set<Long> existingLikes = filmStorage.getFilmLikes(filmId);
+        if (existingLikes.contains(userId)) {
             throw new ValidationException("Пользователь уже поставил лайк этому фильму");
         }
-        filmStorage.updateFilm(film);
+
+        filmStorage.addLike(filmId, userId);
     }
 
     public void removeLike(Long filmId, Long userId) {
         if (!filmStorage.filmExists(filmId)) {
-            throw new NotFoundException("Film not found with id: " + filmId);
+            throw new NotFoundException("Фильм с ID " + filmId + " не найден");
         }
+
         if (!userStorage.userExists(userId)) {
-            throw new NotFoundException("User not found with id: " + userId);
+            throw new NotFoundException("Пользователь с ID " + userId + " не найден");
         }
 
         filmStorage.removeLike(filmId, userId);
@@ -104,6 +107,7 @@ public class FilmService {
         if (film.getReleaseDate().isBefore(CINEMA_BIRTHDAY)) {
             throw new ValidationException("Дата релиза не может быть раньше " + CINEMA_BIRTHDAY);
         }
+
         if (film.getDuration() <= 0) {
             throw new ValidationException("Продолжительность должна быть положительной");
         }
@@ -125,3 +129,4 @@ public class FilmService {
         return mpaStorage.getAllMpaRatings();
     }
 }
+

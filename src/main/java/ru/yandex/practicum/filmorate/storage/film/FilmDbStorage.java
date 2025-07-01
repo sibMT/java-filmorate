@@ -79,12 +79,13 @@ public class FilmDbStorage implements FilmStorage {
                     f.mpa_id,
                     m.name AS mpa_name,
                     m.code AS mpa_code,
-                    COUNT(l.user_id) AS likes_count  // Добавлен подсчет лайков
+                    COUNT(l.user_id) AS likes_count
                 FROM films f
                 JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
                 LEFT JOIN likes l ON f.film_id = l.film_id
                 WHERE f.film_id = ?
-                GROUP BY f.film_id, m.mpa_id""";
+                GROUP BY f.film_id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name, m.code
+                """;
 
         try {
             Film film = jdbcTemplate.queryForObject(sql, new FilmRowMapper(), id);
@@ -151,15 +152,27 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getPopularFilms(int count) {
         String sql = """
-                SELECT f.*, m.name AS mpa_name, m.code AS mpa_code,
-                       (SELECT COUNT(*) FROM likes WHERE film_id = f.film_id) AS likes_count
+                SELECT
+                    f.film_id,
+                    f.name,
+                    f.description,
+                    f.release_date,
+                    f.duration,
+                    f.mpa_id,
+                    m.name AS mpa_name,
+                    m.code AS mpa_code,
+                    COUNT(l.user_id) AS likes_count
                 FROM films f
                 JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
+                LEFT JOIN likes l ON f.film_id = l.film_id
+                GROUP BY f.film_id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name, m.code
                 ORDER BY likes_count DESC
-                LIMIT ?""";
+                LIMIT ?
+                """;
 
         return jdbcTemplate.query(sql, new FilmRowMapper(), count);
     }
+
 
     @Override
     public boolean filmExists(Long filmId) {

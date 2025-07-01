@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.mappers.UserRowMapper;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.sql.ResultSet;
@@ -58,7 +59,7 @@ public class UserDbStorage implements UserStorage {
     public User getUserById(Long id) {
         String sql = "SELECT * FROM users WHERE user_id = ?";
         try {
-            return jdbcTemplate.queryForObject(sql, this::mapRowToUser, id);
+            return jdbcTemplate.queryForObject(sql, new UserRowMapper(jdbcTemplate), id);
         } catch (EmptyResultDataAccessException e) {
             throw new NotFoundException("Пользователь с ID " + id + " не найден.");
         }

@@ -6,7 +6,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.mappers.UserRowMapper;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.sql.ResultSet;
@@ -59,17 +58,25 @@ public class UserDbStorage implements UserStorage {
     public User getUserById(Long id) {
         String sql = "SELECT * FROM users WHERE user_id = ?";
         try {
-            return jdbcTemplate.queryForObject(sql, new UserRowMapper(jdbcTemplate), id);
+            User user = jdbcTemplate.queryForObject(sql, this::mapRowToUser, id);
+            if (user != null) {
+                user.setFriends(getUserFriendIds(id));
+            }
+            return user;
         } catch (EmptyResultDataAccessException e) {
             throw new NotFoundException("Пользователь с ID " + id + " не найден.");
         }
     }
 
+
     @Override
     public Collection<User> getAllUsers() {
         String sql = "SELECT * FROM users";
-        return jdbcTemplate.query(sql, this::mapRowToUser);
+        List<User> users = jdbcTemplate.query(sql, this::mapRowToUser);
+        users.forEach(user -> user.setFriends(getUserFriendIds(user.getId())));
+        return users;
     }
+
 
     @Override
     public void deleteUser(Long id) {
@@ -147,4 +154,10 @@ public class UserDbStorage implements UserStorage {
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId, friendId);
         return count != null && count > 0;
     }
+
+    public Set<Long> getUserFriendIds(Long userId) {
+        String sql = "SELECT friend_id FROM friends WHERE user_id = ?";
+        return new HashSet<>(jdbcTemplate.queryForList(sql, Long.class, userId));
+    }
+
 }

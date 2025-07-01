@@ -9,10 +9,7 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.mappers.FilmRowMapper;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.model.MpaRating;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 
 @Repository
@@ -115,12 +112,19 @@ public class FilmDbStorage implements FilmStorage {
                     m.code AS mpa_code,
                     (SELECT COUNT(*) FROM likes l WHERE l.film_id = f.film_id) AS likes_count
                 FROM films f
-                JOIN mpa_ratings m ON f.mpa_id = m.mpa_id""";
+                JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
+                """;
 
-        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm);
-        films.forEach(film -> film.setGenres(getFilmGenres(film.getId())));
+        List<Film> films = jdbcTemplate.query(sql, new FilmRowMapper());
+
+        films.forEach(film -> {
+            film.setGenres(getFilmGenres(film.getId()));
+            film.setLikes(getFilmLikes(film.getId()));
+        });
+
         return films;
     }
+
 
     @Override
     public void deleteFilm(Long id) {
@@ -154,7 +158,7 @@ public class FilmDbStorage implements FilmStorage {
                 ORDER BY likes_count DESC
                 LIMIT ?""";
 
-        return jdbcTemplate.query(sql, this::mapRowToFilm, count);
+        return jdbcTemplate.query(sql, new FilmRowMapper(), count);
     }
 
     @Override
@@ -170,21 +174,6 @@ public class FilmDbStorage implements FilmStorage {
         return Boolean.TRUE.equals(
                 jdbcTemplate.queryForObject(sql, Boolean.class, userId)
         );
-    }
-
-    private Film mapRowToFilm(ResultSet rs, int rowNum) throws SQLException {
-        return Film.builder()
-                .id(rs.getLong("film_id"))
-                .name(rs.getString("name"))
-                .description(rs.getString("description"))
-                .releaseDate(rs.getDate("release_date").toLocalDate())
-                .duration(rs.getInt("duration"))
-                .mpa(new MpaRating(
-                        rs.getInt("mpa_id"),
-                        rs.getString("mpa_name"),
-                        rs.getString("mpa_code")))
-                .likesCount(rs.getInt("likes_count"))
-                .build();
     }
 
     private Set<Genre> getFilmGenres(Long filmId) {

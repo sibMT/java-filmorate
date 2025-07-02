@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.service;
 
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -12,7 +11,7 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import java.time.LocalDate;
 import java.util.*;
 
-@Slf4j
+
 @Service
 @RequiredArgsConstructor
 public class UserService {

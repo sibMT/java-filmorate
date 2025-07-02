@@ -74,7 +74,7 @@ class FilmDbStorageTest {
     }
 
     @Test
-    void updateFilm_shouldThrowWhenFilmNotFound() {
+    void updateFilm_() {
         Film unknownFilm = Film.builder()
                 .id(999L)
                 .name("Unknown Film")

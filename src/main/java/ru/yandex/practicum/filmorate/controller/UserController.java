@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 
@@ -20,7 +21,6 @@ public class UserController {
 
     private final UserService userService;
 
-
     @GetMapping
     public Collection<User> getAllUsers() {
         log.info("Запрос списка всех пользователей.");
@@ -31,49 +31,59 @@ public class UserController {
     @PostMapping
     public User addUser(@Valid @RequestBody User user) {
         log.debug("Попытка добавить пользователя: {}", user.getEmail());
-        log.info("Пользователь добавлен успешно. ID: {}, Имя: {}", user.getId(), user.getName());
-        return userService.addUser(user);
+        User addedUser = userService.addUser(user);
+        log.info("Пользователь добавлен успешно. ID: {}, Имя: {}", addedUser.getId(), addedUser.getName());
+        return addedUser;
     }
 
     @GetMapping("/{id}")
     public User getUserById(@PathVariable Long id) {
         log.info("Получен Http запрос на получение пользователя по id: {}", id);
-        log.debug("Найден пользователь: {}", userService.getUserById(id));
-        return userService.getUserById(id);
+        User user = userService.getUserById(id);
+        log.debug("Найден пользователь: {}", user);
+        return user;
     }
 
     @PutMapping
     public User updateUser(@Valid @RequestBody User user) {
         log.debug("Попытка обновления пользователя: {}", user);
-        log.info("Пользователь обновлён. ID: {}", user.getId());
-        return userService.updateUser(user);
+        User updatedUser = userService.updateUser(user);
+        log.info("Пользователь обновлён. ID: {}", updatedUser.getId());
+        return updatedUser;
     }
 
-    @DeleteMapping
+    @DeleteMapping("/{id}")
     public void deleteUser(@PathVariable Long id) {
         log.info("Запрос на удаление пользователя с id {}", id);
         userService.deleteUser(id);
     }
 
-    @PutMapping("/{id}/friends/{friendId}")
+    @PutMapping("/{userId}/friends/{friendId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void addFriend(@PathVariable Long id, @PathVariable Long friendId) {
-        userService.addFriend(id, friendId);
+    public void addFriend(@PathVariable Long userId, @PathVariable Long friendId) {
+        log.info("Adding friend: {} -> {}", userId, friendId);
+        userService.addFriend(userId, friendId);
     }
 
-    @GetMapping("/{id}/friends")
-    public List<User> getFriends(@PathVariable Long id) {
-        return userService.getFriends(id);
+    @GetMapping("/{userId}/friends")
+    public List<User> getFriends(@PathVariable Long userId) {
+        log.info("Getting friends for user: {}", userId);
+        if (!userService.userExists(userId)) {
+            throw new NotFoundException("User not found");
+        }
+        return userService.getFriends(userId);
     }
 
-    @GetMapping("/{id}/friends/common/{otherId}")
-    public List<User> getCommonFriends(@PathVariable Long id, @PathVariable Long otherId) {
-        return userService.getCommonFriends(id, otherId);
+    @GetMapping("/{userId}/friends/common/{otherId}")
+    public List<User> getCommonFriends(@PathVariable Long userId, @PathVariable Long otherId) {
+        log.info("Finding common friends between {} and {}", userId, otherId);
+        return userService.getCommonFriends(userId, otherId);
     }
 
-    @DeleteMapping("/{id}/friends/{friendId}")
+    @DeleteMapping("/{userId}/friends/{friendId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void removeFriend(@PathVariable Long id, @PathVariable Long friendId) {
-        userService.removeFriend(id, friendId);
+    public void removeFriend(@PathVariable Long userId, @PathVariable Long friendId) {
+        log.info("Removing friend: {} -> {}", userId, friendId);
+        userService.removeFriend(userId, friendId);
     }
 }

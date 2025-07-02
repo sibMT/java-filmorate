@@ -1,11 +1,8 @@
 package ru.yandex.practicum.filmorate.model;
 
-import com.fasterxml.jackson.annotation.JsonSetter;
 import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -13,8 +10,6 @@ import java.util.Set;
 
 @Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class Film {
     private Long id;
 
@@ -35,8 +30,11 @@ public class Film {
     @Builder.Default
     private Set<Long> likes = new HashSet<>();
 
-    @JsonSetter("likes")
-    public void setLikes(Set<Long> likes) {
-        this.likes = likes != null ? likes : new HashSet<>();
-    }
+    private MpaRating mpa;
+
+    @Builder.Default
+    private Set<Genre> genres = new HashSet<>();
+
+    @Builder.Default
+    private int likesCount = 0;
 }

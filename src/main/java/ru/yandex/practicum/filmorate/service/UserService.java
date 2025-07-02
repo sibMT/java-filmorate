@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.service;
 
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -11,9 +10,8 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 
-@Slf4j
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -45,66 +43,6 @@ public class UserService {
 
     public void deleteUser(Long id) {
         userStorage.deleteUser(id);
-    }
-
-    public void addFriend(Long userId, Long friendId) {
-        User user = userStorage.getUserById(userId);
-        User friend = userStorage.getUserById(friendId);
-
-        if (user.getFriends() == null) {
-            user.setFriends(new HashSet<>());
-        }
-        if (friend.getFriends() == null) {
-            friend.setFriends(new HashSet<>());
-        }
-
-        user.getFriends().add(friendId);
-        friend.getFriends().add(userId);
-
-        userStorage.updateUser(user);
-        userStorage.updateUser(friend);
-        ;
-    }
-
-    public List<User> getFriends(Long userId) {
-        User user = userStorage.getUserById(userId);
-        if (user.getFriends() == null) {
-            return List.of();
-        }
-        return user.getFriends().stream()
-                .map(userStorage::getUserById)
-                .collect(Collectors.toList());
-    }
-
-    public List<User> getCommonFriends(Long userId1, Long userId2) {
-        User user1 = userStorage.getUserById(userId1);
-        User user2 = userStorage.getUserById(userId2);
-
-        Set<Long> friends1 = user1.getFriends() != null ? user1.getFriends() : Set.of();
-        Set<Long> friends2 = user2.getFriends() != null ? user2.getFriends() : Set.of();
-
-        return friends1.stream()
-                .filter(friends2::contains)
-                .map(userStorage::getUserById)
-                .collect(Collectors.toList());
-    }
-
-    public void removeFriend(Long userId, Long friendId) {
-        User user = userStorage.getUserById(userId);
-        User friend = userStorage.getUserById(friendId);
-
-        if (user.getFriends() == null) {
-            user.setFriends(new HashSet<>());
-        }
-        if (friend.getFriends() == null) {
-            friend.setFriends(new HashSet<>());
-        }
-
-        user.getFriends().remove(friendId);
-        friend.getFriends().remove(userId);
-
-        userStorage.updateUser(user);
-        userStorage.updateUser(friend);
     }
 
     private void validateUser(User user) {
@@ -144,5 +82,29 @@ public class UserService {
         if (!user.getLogin().equalsIgnoreCase(existingUser.getLogin())) {
             validateUnique(user);
         }
+    }
+
+    public void addFriend(Long userId, Long friendId) {
+        userStorage.addFriend(userId, friendId);
+    }
+
+    public void removeFriend(Long userId, Long friendId) {
+        userStorage.getUserById(userId);
+        userStorage.getUserById(friendId);
+        userStorage.removeFriend(userId, friendId);
+    }
+
+    public List<User> getFriends(Long userId) {
+        return userStorage.getFriends(userId);
+    }
+
+    public List<User> getCommonFriends(Long userId1, Long userId2) {
+        userStorage.getUserById(userId1);
+        userStorage.getUserById(userId2);
+        return userStorage.getCommonFriends(userId1, userId2);
+    }
+
+    public boolean userExists(Long userId) {
+        return userStorage.userExists(userId);
     }
 }

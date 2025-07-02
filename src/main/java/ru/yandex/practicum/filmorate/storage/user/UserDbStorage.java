@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -15,7 +14,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-@Slf4j
 @Repository
 public class UserDbStorage implements UserStorage {
     private final JdbcTemplate jdbcTemplate;
@@ -85,16 +83,12 @@ public class UserDbStorage implements UserStorage {
         if (!userExists(userId) || !userExists(friendId)) {
             throw new NotFoundException("User not found");
         }
-
         jdbcTemplate.update(
                 "MERGE INTO friends KEY(user_id, friend_id) VALUES (?, ?)",
                 userId, friendId
         );
-        jdbcTemplate.update(
-                "MERGE INTO friends KEY(user_id, friend_id) VALUES (?, ?)",
-                friendId, userId
-        );
     }
+
 
     @Override
     public void removeFriend(Long userId, Long friendId) {

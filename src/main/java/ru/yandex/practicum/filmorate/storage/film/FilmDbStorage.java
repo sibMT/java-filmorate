@@ -24,6 +24,17 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film addFilm(Film film) {
+        if (!mpaExists(film.getMpa().getId())) {
+            throw new NotFoundException("MPA rating with id=" + film.getMpa().getId() + " not found.");
+        }
+
+        if (film.getGenres() != null) {
+            for (Genre genre : film.getGenres()) {
+                if (!genreExists(genre.getId())) {
+                    throw new NotFoundException("Genre with id=" + genre.getId() + " not found.");
+                }
+            }
+        }
         String sql = "INSERT INTO films (name, description, release_date, duration, mpa_id) " +
                 "VALUES (:name, :description, :releaseDate, :duration, :mpaId)";
 
@@ -174,4 +185,15 @@ public class FilmDbStorage implements FilmStorage {
         String sql = "SELECT user_id FROM likes WHERE film_id = ?";
         return new HashSet<>(jdbcTemplate.queryForList(sql, Long.class, filmId));
     }
+
+    private boolean mpaExists(int mpaId) {
+        String sql = "SELECT EXISTS (SELECT 1 FROM mpa_ratings WHERE mpa_id = ?)";
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(sql, Boolean.class, mpaId));
+    }
+
+    private boolean genreExists(int genreId) {
+        String sql = "SELECT EXISTS (SELECT 1 FROM genres WHERE genre_id = ?)";
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(sql, Boolean.class, genreId));
+    }
+
 }
